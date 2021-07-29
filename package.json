@@ -1,0 +1,29 @@
+{
+  "name": "root",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "bootstrap": "lerna bootstrap && lerna link",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./",
+    "test": "yarn workspaces run test",
+    "verify": "yarn workspaces run verify"
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx}": [
+      "yarn run prettify"
+    ]
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@roborox/eslint-config-default": "2.2.0",
+    "eslint": "7.10.0",
+    "eslint-config-prettier": "6.11.0",
+    "husky": "4.3.0",
+    "lerna": "^3.20.2",
+    "lint-staged": "10.4.0",
+    "prettier": "2.1.2"
+  }
+}
