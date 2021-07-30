@@ -3,7 +3,7 @@ export async function retry<T>(num: number, fn: () => Promise<T>): Promise<T> {
 		return await fn()
 	} catch (e) {
 		if (num > 0) {
-			await delay(100)
+			await delay(500)
 			return retry(num - 1, fn)
 		} else {
 			return Promise.reject(e)
