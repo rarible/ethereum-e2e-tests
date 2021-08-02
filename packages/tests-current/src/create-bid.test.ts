@@ -44,7 +44,6 @@ describe("erc721 create bid/accept bid", function() {
             originFees: [],
             payouts: [],
             price: 10,
-            // taker: toAddress(wallet2.getAddressString()),
         }).then(a => a.runAll())
 
         await awaitStockToBe(sdk1.apis.order, order.hash, 10)
