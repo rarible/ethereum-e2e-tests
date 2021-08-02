@@ -28,7 +28,6 @@ describe("erc721 create bid/accept bid", function() {
         await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet1.getAddressString(), 100)
         await erc721Mint(conf.testErc721, wallet1.getAddressString(), wallet2.getAddressString(), 1)
 
-        // @ts-ignore
         const order: Order = await sdk1.order.bid({
             makeAssetType: {
                 assetClass: "ERC20",
