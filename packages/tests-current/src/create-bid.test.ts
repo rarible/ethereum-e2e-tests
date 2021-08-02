@@ -1,7 +1,8 @@
-import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
+// import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import {Order} from '@rarible/protocol-api-client'
 import fetch from "node-fetch"
 import { toAddress, toBigNumber } from "@rarible/types"
+import { createRaribleSdk } from "../../../../protocol-ethereum-sdk/src/index"
 import { createE2eProvider } from "./common/create-e2e-provider"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
@@ -27,6 +28,7 @@ describe("erc721 create bid/accept bid", function() {
         await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet1.getAddressString(), 100)
         await erc721Mint(conf.testErc721, wallet1.getAddressString(), wallet2.getAddressString(), 1)
 
+        // @ts-ignore
         const order: Order = await sdk1.order.bid({
             makeAssetType: {
                 assetClass: "ERC20",
@@ -42,11 +44,13 @@ describe("erc721 create bid/accept bid", function() {
             originFees: [],
             payouts: [],
             price: 10,
-            taker: toAddress(wallet2.getAddressString()),
+            // taker: toAddress(wallet2.getAddressString()),
         }).then(a => a.runAll())
 
         await awaitStockToBe(sdk1.apis.order, order.hash, 10)
         await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
+
+        await sdk2.order.fill(order, { payouts: [], originFees: [], amount: 1, infinite: true }).then(a => a.runAll())
 
         await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 90)
         await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 10)
