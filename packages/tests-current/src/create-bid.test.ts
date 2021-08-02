@@ -48,8 +48,6 @@ describe("erc721 create bid/accept bid", function() {
         await awaitStockToBe(sdk1.apis.order, order.hash, 10)
         await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
 
-        const h = await sdk2.order.fill(order, { payouts: [], originFees: [], amount: 10 }).then(a => a.runAll())
-
         await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 90)
         await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 10)
         await verifyErc721Owner(conf.testErc721, 1, wallet1.getAddressString())
