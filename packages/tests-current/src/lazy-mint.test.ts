@@ -1,6 +1,7 @@
 import fetch from "node-fetch"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
+import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { createE2eProvider } from "./common/create-e2e-provider"
 import { deployTestErc721 } from "./contracts/test-erc721"
 import { awaitAll } from "./common/await-all"
@@ -10,7 +11,7 @@ import { deployTestErc1155 } from "./contracts/test-erc1155"
 describe("lazy-mint test", function () {
 	const { web3, wallet } = createE2eProvider()
 
-	const sdk = createRaribleSdk(web3, "e2e", { fetchApi: fetch })
+	const sdk = createRaribleSdk(new Web3Ethereum({ web3: web3 }), "e2e", { fetchApi: fetch })
 
 	const conf = awaitAll({
 		testErc721: deployTestErc721(web3),
