@@ -47,12 +47,17 @@ describe("erc1155-sale", function () {
 			payouts: [],
 			price: 10,
 			takeAssetType: { assetClass: "ERC20", contract: toAddress(conf.testErc20.options.address) },
-		}).then(a => a.runAll())
+		}).then(a => a.build().runAll())
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 50)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerHasErc20)
 
-		await sdk2.order.fill(order, { payouts: [], originFees: [], amount: 10, infinite: true }).then(a => a.runAll())
+		await sdk2.order.fill(order, {
+			payouts: [],
+			originFees: [],
+			amount: 10,
+			infinite: true,
+		}).then(a => a.build().runAll())
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
@@ -70,7 +75,12 @@ describe("erc1155-sale", function () {
 			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)
 		})
 
-		await sdk2.order.fill(order, { payouts: [], originFees: [], amount: 20, infinite: true }).then(a => a.runAll())
+		await sdk2.order.fill(order, {
+			payouts: [],
+			originFees: [],
+			amount: 20,
+			infinite: true,
+		}).then(a => a.build().runAll())
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 700)
 		await awaitStockToBe(sdk1.apis.order, order.hash, 20)
 

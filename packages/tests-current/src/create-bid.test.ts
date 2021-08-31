@@ -43,12 +43,17 @@ describe("erc721 create bid/accept bid", function () {
 			originFees: [],
 			payouts: [],
 			price: '10',
-		}).then(a => a.runAll())
+		}).then(a => a.build().runAll())
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 10)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
 
-		await sdk2.order.fill(order, { payouts: [], originFees: [], amount: 1, infinite: true }).then(a => a.runAll())
+		await sdk2.order.fill(order, {
+			payouts: [],
+			originFees: [],
+			amount: 1,
+			infinite: true,
+		}).then(a => a.build().runAll())
 
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 90)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 10)

@@ -20,28 +20,38 @@ describe("lazy-mint test", function () {
 
 	test("should create lazy mint ERC721 token", async () => {
 
-		const item = await sdk.nft.mintLazy({
-			"@type": "ERC721",
-			contract: toAddress(conf.testErc721.options.address),
+		const tokenId = await sdk.nft.mint({
+			collection: {
+				type: "ERC721",
+				id: toAddress(conf.testErc721.options.address),
+				supportsLazyMint: true,
+			},
 			uri: '//testUri',
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
+			lazy: true,
 		})
-		await verifyMinted(sdk, item.id, item)
+		const itemId = `${conf.testErc721.options.address}:${tokenId}`
+		await verifyMinted(sdk, itemId)
 
 	}, 50000)
 
 	test("should create lazy mint ERC1155 token", async () => {
 
-		const item = await sdk.nft.mintLazy({
-			"@type": "ERC1155",
-			contract: toAddress(conf.testErc721.options.address),
+		const tokenId = await sdk.nft.mint({
+			collection: {
+				type: "ERC1155",
+				id: toAddress(conf.testErc721.options.address),
+				supportsLazyMint: true,
+			},
 			uri: '//testUri',
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
 			supply: toBigNumber('100'),
+			lazy: true,
 		})
-		await verifyMinted(sdk, item.id, item)
+		const itemId = `${conf.testErc721.options.address}:${tokenId}`
+		await verifyMinted(sdk, itemId)
 
 	}, 50000)
 })

@@ -38,12 +38,17 @@ describe("erc721-sale", function () {
 			payouts: [],
 			price: 10,
 			takeAssetType: { assetClass: "ERC20", contract: toAddress(conf.testErc20.options.address) },
-		}).then(a => a.runAll())
+		}).then(a => a.build().runAll())
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 1)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 100)
 
-		await sdk2.order.fill(order, { payouts: [], originFees: [], amount: 1, infinite: true }).then(a => a.runAll())
+		await sdk2.order.fill(order, {
+			payouts: [],
+			originFees: [],
+			amount: 1,
+			infinite: true,
+		}).then(a => a.build().runAll())
 
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 10)
 		await verifyErc721Owner(conf.testErc721, 1, wallet2.getAddressString())
