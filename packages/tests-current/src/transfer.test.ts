@@ -9,7 +9,7 @@ import { verifyErc721Balance } from "./common/verify-erc721-balance"
 import { deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
 import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
 
-describe("erc721-sale", function () {
+describe("transfer test", function () {
 	const { web3: web31, wallet: wallet1 } = createE2eProvider()
 	const { wallet: wallet2 } = createE2eProvider()
 	const sdk1 = createRaribleSdk(new Web3Ethereum({ web3: web31 }), "e2e", { fetchApi: fetch })
@@ -32,7 +32,7 @@ describe("erc721-sale", function () {
 
 		await verifyErc721Balance(conf.testErc721, wallet2.getAddressString(), 1)
 	}, 30000)
-	test("test-erc155 transfer", async () => {
+	test("test-erc1155 transfer", async () => {
 		await erc1155Mint(conf.testErc1155, wallet1.getAddressString(), wallet1.getAddressString(), 1, 100)
 
 		await sdk1.nft.transfer({
