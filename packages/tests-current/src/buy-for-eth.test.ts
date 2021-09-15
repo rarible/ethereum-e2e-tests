@@ -1,26 +1,22 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
-import fetch from "node-fetch"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { createE2eProvider } from "./common/create-e2e-provider"
 import { verifyNewOwner } from "./common/verify-new-owner"
 import { verifyEthBalance } from "./common/verify-eth-balance"
 import { toBn } from "./common/to-bn"
+import { initProviders } from "./common/init-providers"
+import { parseItemId } from "./common/parse-item-id"
 
 describe("test buy erc721 for eth", function () {
-	const { web3: web31, wallet: wallet1 } = createE2eProvider()
-	const {
-		web3: web32,
-		wallet: wallet2,
-	} = createE2eProvider("ded057615d97f0f1c751ea2795bc4b03bbf44844c13ab4f5e6fd976506c276b9")
+	const { web31, web32, wallet1, wallet2 } = initProviders({ pk2: "ded057615d97f0f1c751ea2795bc4b03bbf44844c13ab4f5e6fd976506c276b9" })
 
-	const sdk1 = createRaribleSdk(new Web3Ethereum({ web3: web31 }), "e2e", { fetchApi: fetch })
-	const sdk2 = createRaribleSdk(new Web3Ethereum({ web3: web32 }), "e2e", { fetchApi: fetch })
+	const sdk1 = createRaribleSdk(new Web3Ethereum({ web3: web31 }), "e2e")
+	const sdk2 = createRaribleSdk(new Web3Ethereum({ web3: web32 }), "e2e")
 
 	const erc721Address = toAddress("0x22f8CE349A3338B15D7fEfc013FA7739F5ea2ff7")
 
 	test("test buy erc721 for eth", async () => {
-		const tokenId = await sdk1.nft.mint({
+		const itemId = await sdk1.nft.mint({
 			collection: {
 				type: "ERC721",
 				id: erc721Address,
@@ -31,11 +27,12 @@ describe("test buy erc721 for eth", function () {
 			royalties: [],
 		})
 
+		const { tokenId } = parseItemId(itemId)
 		const order = await sdk1.order.sell({
 			makeAssetType: {
 				assetClass: "ERC721",
 				contract: toAddress(erc721Address),
-				tokenId: toBigNumber(tokenId as string),
+				tokenId: toBigNumber(tokenId),
 			},
 			amount: 1,
 			maker: toAddress(wallet1.getAddressString()),
@@ -53,7 +50,7 @@ describe("test buy erc721 for eth", function () {
 			amount: 1,
 		}).then(a => a.build().runAll())
 
-		await verifyNewOwner(sdk2, tokenId as string, toAddress(wallet2.getAddressString()))
+		await verifyNewOwner(sdk2, itemId, toAddress(wallet2.getAddressString()))
 		await verifyEthBalance(web32, toAddress(wallet2.getAddressString()), toBn(balanceBefore).minus(1000000).toString())
-	}, 30000)
+	})
 })
