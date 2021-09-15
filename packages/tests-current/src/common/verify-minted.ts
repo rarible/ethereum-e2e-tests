@@ -1,6 +1,8 @@
-import { NftItem } from "@rarible/protocol-api-client"
 import { RaribleSdk } from "@rarible/protocol-ethereum-sdk"
+import { retry } from "./retry"
 
-export async function verifyMinted(sdk: RaribleSdk, tokenId: string, expectedItem: NftItem) {
-	expect(await sdk.apis.nftItem.getNftItemById({ itemId: tokenId })).toStrictEqual(expectedItem)
+export async function verifyMinted(sdk: RaribleSdk, tokenId: string) {
+	await retry(3, async () => {
+		await sdk.apis.nftItem.getNftItemById({ itemId: tokenId })
+	})
 }

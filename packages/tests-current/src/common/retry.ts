@@ -13,8 +13,6 @@ export async function retry<T>(num: number, fn: () => Promise<T>): Promise<T> {
 
 function delay(time: number): Promise<void> {
 	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve()
-		}, time)
+		setTimeout(resolve, time)
 	})
 }

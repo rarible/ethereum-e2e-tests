@@ -1,15 +1,14 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { randomAddress } from "@rarible/types"
-import fetch from "node-fetch"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { createE2eProvider } from "./common/create-e2e-provider"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
-import { retry } from "./retry"
+import { retry } from "./common/retry"
 import { awaitAll } from "./common/await-all"
+import { initProvider } from "./common/init-providers"
 
 describe("Index minted", function () {
-	const { web3, wallet } = createE2eProvider()
-	const sdk = createRaribleSdk(new Web3Ethereum({ web3 }), "e2e", { fetchApi: fetch })
+	const { web3, wallet } = initProvider()
+	const sdk = createRaribleSdk(new Web3Ethereum({ web3 }), "e2e")
 
 	const conf = awaitAll({
 		testErc721: deployTestErc721(web3),
@@ -22,5 +21,5 @@ describe("Index minted", function () {
 		await retry(30, () => {
 			return sdk.apis.nftItem.getNftItemById({ itemId })
 		})
-	}, 10000)
+	})
 })
