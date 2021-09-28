@@ -13,7 +13,6 @@ pipeline {
 				sh 'yarn'
 				sh 'yarn bootstrap'
 				sh 'yarn clean'
-				sh 'yarn build-all'
 				sh 'yarn test'
       }
     }
