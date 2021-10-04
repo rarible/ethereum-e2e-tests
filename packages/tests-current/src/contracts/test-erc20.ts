@@ -1,6 +1,7 @@
 import Web3 from "web3"
 import { Address } from "@rarible/protocol-api-client"
 import { Contract } from "web3-eth-contract"
+import { Ethereum, EthereumContract } from "@rarible/ethereum-provider"
 
 const testErc20Abi = [
 	{
@@ -326,4 +327,8 @@ export function erc20Mint(c: Contract, from: string, to: string, value: string |
 function createTestErc20(web3: Web3, address?: Address) {
 	// @ts-ignore
 	return new web3.eth.Contract(testErc20Abi, address)
+}
+
+export function createErc20EthereumContract(ethereum: Ethereum, address?: Address): EthereumContract {
+	return ethereum.createContract(testErc20Abi, address)
 }

@@ -1,6 +1,7 @@
 import { toAddress, toBigNumber } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
+import { ERC1155VersionEnum, ERC721VersionEnum } from "@rarible/protocol-ethereum-sdk/build/nft/contracts/domain"
 import { verifyErc721Burned } from "./common/verify-erc-721-burned"
 import { createMintableTokenContract } from "./contracts/mintable-token"
 import { createRaribleTokenContract } from "./contracts/rarible-token"
@@ -20,17 +21,20 @@ describe("burn test", function () {
 	test("should burn ERC721 token", async () => {
 		const erc721Address = toAddress("0x87ECcc03BaBC550c919Ad61187Ab597E9E7f7C21")
 		const testErc721 = createMintableTokenContract(ethereum, erc721Address)
-		const itemId = await sdk.nft.mint({
+		const mintResponse = await sdk.nft.mint({
 			collection: {
-				type: "ERC721",
+				features: ["SECONDARY_SALE_FEES"],
 				id: erc721Address,
+				name: "Test-collection",
+				type: "ERC721",
 				supportsLazyMint: false,
+				version: ERC721VersionEnum.ERC721V2,
 			},
 			uri: '//testUri',
 			royalties: [],
 		})
 
-		const { tokenId } = parseItemId(itemId)
+		const { tokenId } = parseItemId(mintResponse.itemId)
 		await sdk.nft.burn({ assetClass: "ERC721", contract: erc721Address, tokenId: toBigNumber(tokenId) })
 
 		await verifyErc721Burned(testErc721, testAddress)
@@ -40,19 +44,22 @@ describe("burn test", function () {
 		const erc1155Address = toAddress("0x8812cFb55853da0968a02AaaEA84CD93EC4b42A1")
 		const testErc1155 = createRaribleTokenContract(ethereum, erc1155Address)
 
-		const itemId = await sdk.nft.mint({
+		const mintResponse = await sdk.nft.mint({
 			collection: {
-				type: "ERC1155",
+				features: ["SECONDARY_SALE_FEES"],
 				id: erc1155Address,
+				name: "Test-collection",
+				type: "ERC1155",
 				supportsLazyMint: false,
+				version: ERC1155VersionEnum.ERC1155V1,
 			},
 			uri: '//testUri',
 			royalties: [],
 			supply: 10,
 		})
 
-		const { tokenId } = parseItemId(itemId)
-		await sdk.nft.burn({ assetClass: "ERC1155", contract: erc1155Address, tokenId: toBigNumber(tokenId) }, 5)
+		const { tokenId } = parseItemId(mintResponse.itemId)
+		await sdk.nft.burn({ assetClass: "ERC1155", contract: erc1155Address, tokenId: toBigNumber(tokenId) }, toBigNumber("5"))
 		await verifyErc1155Burned(testErc1155, testAddress, tokenId, 5)
 	})
 })

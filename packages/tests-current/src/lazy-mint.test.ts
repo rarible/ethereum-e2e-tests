@@ -1,6 +1,7 @@
-import { toAddress, toBigNumber } from "@rarible/types"
+import { toAddress } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
+import { ERC1155VersionEnum, ERC721VersionEnum } from "@rarible/protocol-ethereum-sdk/build/nft/contracts/domain"
 import { deployTestErc721 } from "./contracts/test-erc721"
 import { awaitAll } from "./common/await-all"
 import { verifyMinted } from "./common/verify-minted"
@@ -19,34 +20,40 @@ describe("lazy-mint test", function () {
 
 	test("should create lazy mint ERC721 token", async () => {
 
-		const itemId = await sdk.nft.mint({
+		const mintResponse = await sdk.nft.mint({
 			collection: {
-				type: "ERC721",
+				features: ["SECONDARY_SALE_FEES", "MINT_AND_TRANSFER"],
 				id: toAddress(conf.testErc721.options.address),
+				name: "Test-collection",
+				type: "ERC721",
 				supportsLazyMint: true,
+				version: ERC721VersionEnum.ERC721V3,
 			},
 			uri: '//testUri',
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
 			lazy: true,
 		})
-		await verifyMinted(sdk, itemId)
+		await verifyMinted(sdk, mintResponse.itemId)
 	})
 
 	test("should create lazy mint ERC1155 token", async () => {
 
-		const itemId = await sdk.nft.mint({
+		const mintResponse = await sdk.nft.mint({
 			collection: {
-				type: "ERC1155",
+				features: ["MINT_AND_TRANSFER"],
 				id: toAddress(conf.testErc721.options.address),
+				name: "Test-collection",
+				type: "ERC1155",
 				supportsLazyMint: true,
+				version: ERC1155VersionEnum.ERC1155V2,
 			},
 			uri: '//testUri',
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
-			supply: toBigNumber('100'),
+			supply: 100,
 			lazy: true,
 		})
-		await verifyMinted(sdk, itemId)
+		await verifyMinted(sdk, mintResponse.itemId)
 	})
 })
