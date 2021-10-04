@@ -1,25 +1,21 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
 import { Order } from "@rarible/protocol-api-client"
 import { createErc20EthereumContract, deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
 import { awaitStockToBe } from "./common/await-stock-to-be"
-import { verifyErc20Balance } from "./common/verify-erc20-balance"
 import { deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
-import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
 import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
 import { transferErc20 } from "./common/transfer-erc20"
 
 describe("erc1155-sale", function () {
-	const { web31, web32, wallet1, wallet2 } = initProviders({})
+	const { web31, wallet1, wallet2 } = initProviders({})
 
 	const ethereum1 = new Web3Ethereum({ web3: web31 })
 	const sdk1 = createRaribleSdk(ethereum1, "e2e")
-	const sdk2 = createRaribleSdk(new Web3Ethereum({ web3: web32 }), "e2e")
 
 	const conf = awaitAll({
 		testErc20: deployTestErc20(web31),
