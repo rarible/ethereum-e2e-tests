@@ -2,6 +2,7 @@ import type { AbiItem } from "web3-utils"
 import Web3 from "web3"
 import { Address } from "@rarible/protocol-api-client"
 import { Contract } from "web3-eth-contract"
+import { Ethereum, EthereumContract } from "@rarible/ethereum-provider"
 
 const testErc1155Abi: AbiItem[] = [
 	{
@@ -367,11 +368,14 @@ export async function deployTestErc1155(web3: Web3, name: string = 'TEST') {
 		.send({ from: address, gas: 3000000, gasPrice: "0" })
 }
 
-export function erc1155Mint(c: Contract, from: string, to: string, tokenId: string | number, amount: number, data: string = "0x0") {
-    return c.methods.mint(to, tokenId, amount, data).send({ from })
+export function erc1155Mint(c: EthereumContract, from: string, to: string, tokenId: string | number, amount: number, data: string = "0x0") {
+	return c.functionCall('mint', to, tokenId, amount, data).send()
 }
 
 function createTestErc1155(web3: Web3, address?: Address): Contract {
 	return new web3.eth.Contract(testErc1155Abi, address)
 }
 
+export function createErc1155EthereumContract(ethereum: Ethereum, address?: Address): EthereumContract {
+	return ethereum.createContract(testErc1155Abi, address)
+}

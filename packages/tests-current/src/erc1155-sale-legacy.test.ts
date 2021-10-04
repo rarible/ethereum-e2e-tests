@@ -8,7 +8,7 @@ import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
 import { awaitStockToBe } from "./common/await-stock-to-be"
 import { verifyErc20Balance } from "./common/verify-erc20-balance"
-import { deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
+import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
 import { toBn } from "./common/to-bn"
@@ -16,7 +16,8 @@ import { toBn } from "./common/to-bn"
 describe("erc1155-sale", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
 
-	const sdk1 = createRaribleSdk(new Web3Ethereum({ web3: web31 }), "e2e")
+	const ethereum1 = new Web3Ethereum({ web3: web31 })
+	const sdk1 = createRaribleSdk(ethereum1, "e2e")
 	const sdk2 = createRaribleSdk(new Web3Ethereum({ web3: web32 }), "e2e")
 
 	const conf = awaitAll({
@@ -26,14 +27,17 @@ describe("erc1155-sale", function () {
 
 	test("test-erc1155 sell/buy, partial buy using erc-20 (legacy)", async () => {
 		const nftSellerHasErc1155 = { tokenId: 1, amount: 100 }
+		const erc1155Contract = createErc1155EthereumContract(ethereum1, toAddress(conf.testErc1155.options.address))
 
-		await erc1155Mint(
-			conf.testErc1155,
+		const mint1155Tx = await erc1155Mint(
+			erc1155Contract,
 			wallet1.getAddressString(),
 			wallet1.getAddressString(),
 			nftSellerHasErc1155.tokenId,
 			nftSellerHasErc1155.amount,
 		)
+		await mint1155Tx.wait()
+
 		await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet2.getAddressString(), 1000)
 
 		const buyerErc20InitBalance = toBn(await conf.testErc20.methods.balanceOf(wallet2.getAddressString()).call())

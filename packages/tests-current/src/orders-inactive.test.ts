@@ -5,7 +5,7 @@ import { Order } from "@rarible/protocol-api-client"
 import { createErc20EthereumContract, deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
 import { awaitStockToBe } from "./common/await-stock-to-be"
-import { deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
+import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
 import { initProviders } from "./common/init-providers"
 import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
@@ -26,14 +26,17 @@ describe("erc1155-sale", function () {
 	test("make sell order without necessary token amount (erc1155)", async () => {
 		const nftSellerAsset = { tokenId: 1, amount: 100 }
 		const buyerHasErc20 = 1000
+		const erc1155Contract = createErc1155EthereumContract(ethereum1, toAddress(conf.testErc1155.options.address))
 
-		await erc1155Mint(
-			conf.testErc1155,
+		const mint1155Tx = await erc1155Mint(
+			erc1155Contract,
 			wallet1.getAddressString(),
 			wallet1.getAddressString(),
 			nftSellerAsset.tokenId,
 			nftSellerAsset.amount,
 		)
+		await mint1155Tx.wait()
+
 		await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet2.getAddressString(), buyerHasErc20)
 
 		const orderAction = await sdk1.order.sell({
