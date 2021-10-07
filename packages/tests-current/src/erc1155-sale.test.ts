@@ -9,6 +9,7 @@ import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from ".
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
 import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
+import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 
 describe("erc1155-sale", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
