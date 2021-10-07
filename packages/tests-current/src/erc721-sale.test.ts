@@ -47,7 +47,7 @@ describe("erc721-sale", function () {
 			order,
 			originFee: 0,
 			amount: 1,
-			infinite: true
+			infinite: true,
 		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
 
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 10)

@@ -41,7 +41,7 @@ describe("erc721-sale", function () {
 			take: {
 				assetType: {
 					assetClass: "ERC20",
-					contract: toAddress(conf.testErc20.options.address)
+					contract: toAddress(conf.testErc20.options.address),
 				},
 				value: toBigNumber("10"),
 			},
@@ -62,7 +62,7 @@ describe("erc721-sale", function () {
 			order,
 			originFee: 0,
 			amount: 1,
-			infinite: true
+			infinite: true,
 		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
 
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 10)

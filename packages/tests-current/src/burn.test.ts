@@ -1,7 +1,7 @@
 import { toAddress, toBigNumber } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { ERC1155VersionEnum, ERC721VersionEnum } from "@rarible/protocol-ethereum-sdk/build/nft/contracts/domain"
+import { createErc1155V1Collection, createErc721V2Collection } from "@rarible/protocol-ethereum-sdk/build/nft/test/mint"
 import { verifyErc721Burned } from "./common/verify-erc-721-burned"
 import { createMintableTokenContract } from "./contracts/mintable-token"
 import { createRaribleTokenContract } from "./contracts/rarible-token"
@@ -22,15 +22,8 @@ describe("burn test", function () {
 		const erc721Address = toAddress("0x87ECcc03BaBC550c919Ad61187Ab597E9E7f7C21")
 		const testErc721 = createMintableTokenContract(ethereum, erc721Address)
 		const mintResponse = await sdk.nft.mint({
-			collection: {
-				features: ["SECONDARY_SALE_FEES"],
-				id: erc721Address,
-				name: "Test-collection",
-				type: "ERC721",
-				supportsLazyMint: false,
-				version: ERC721VersionEnum.ERC721V2,
-			},
-			uri: '//testUri',
+			collection: createErc721V2Collection(erc721Address),
+			uri: "//testUri",
 			royalties: [],
 		})
 
@@ -45,15 +38,8 @@ describe("burn test", function () {
 		const testErc1155 = createRaribleTokenContract(ethereum, erc1155Address)
 
 		const mintResponse = await sdk.nft.mint({
-			collection: {
-				features: ["SECONDARY_SALE_FEES"],
-				id: erc1155Address,
-				name: "Test-collection",
-				type: "ERC1155",
-				supportsLazyMint: false,
-				version: ERC1155VersionEnum.ERC1155V1,
-			},
-			uri: '//testUri',
+			collection: createErc1155V1Collection(erc1155Address),
+			uri: "//testUri",
 			royalties: [],
 			supply: 10,
 		})

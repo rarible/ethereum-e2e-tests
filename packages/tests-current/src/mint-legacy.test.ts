@@ -1,7 +1,10 @@
 import { toAddress } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { ERC1155VersionEnum, ERC721VersionEnum } from "@rarible/protocol-ethereum-sdk/build/nft/contracts/domain"
+import {
+	createErc1155V1Collection,
+	createErc721V2Collection,
+} from "@rarible/protocol-ethereum-sdk/build/nft/test/mint"
 import { verifyMinted } from "./common/verify-minted"
 import { initProvider } from "./common/init-providers"
 
@@ -16,17 +19,8 @@ describe("mint legacy test", function () {
 	test("should mint legacy ERC721 token", async () => {
 
 		const mintResponse = await sdk.nft.mint({
-			collection: {
-				type: "ERC721",
-				id: erc721Address,
-				supportsLazyMint: false,
-
-				features: ["SECONDARY_SALE_FEES"],
-				// features: ["SECONDARY_SALE_FEES", "MINT_AND_TRANSFER"],
-				name: "Test-collection",
-				version: ERC721VersionEnum.ERC721V2,
-			},
-			uri: '//testUri',
+			collection: createErc721V2Collection(erc721Address),
+			uri: "//testUri",
 			royalties: [],
 		})
 		await verifyMinted(sdk, mintResponse.itemId)
@@ -36,16 +30,8 @@ describe("mint legacy test", function () {
 	test("should mint legacy ERC1155 token", async () => {
 
 		const mintResponse = await sdk.nft.mint({
-			collection: {
-				type: "ERC1155",
-				id: erc1155Address,
-				supportsLazyMint: false,
-
-				features: ["SECONDARY_SALE_FEES"],
-				name: "Test-collection",
-				version: ERC1155VersionEnum.ERC1155V1,
-			},
-			uri: '//testUri',
+			collection: createErc1155V1Collection(erc1155Address),
+			uri: "//testUri",
 			royalties: [],
 			supply: 100,
 		})
