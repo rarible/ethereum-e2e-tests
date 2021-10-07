@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "lerna run clean --parallel",
     "bootstrap": "lerna bootstrap && lerna link",
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./ --fix",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./",
     "test": "yarn workspaces run test",
     "verify": "yarn workspaces run verify"
   },
