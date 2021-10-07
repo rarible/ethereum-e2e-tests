@@ -35,8 +35,5 @@
     "typescript": "4.3.5",
     "web3": "1.2.11",
     "web3-provider-engine": "16.0.1"
-  },
-  "dependencies": {
-    "@rarible/test-provider": "^0.1.22"
   }
 }
