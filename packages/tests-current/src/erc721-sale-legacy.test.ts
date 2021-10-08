@@ -1,7 +1,6 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { randomWord, toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
 import { OrderForm } from "@rarible/protocol-api-client"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
@@ -52,18 +51,21 @@ describe("erc721-sale", function () {
 			},
 			salt: toBigNumber(toBn(randomWord(), 16).toString(10)) as any,
 		}
-		const upsertOrder = await sdk1.order.upsertOrder(orderForm, false)
-		const order = await upsertOrder.build().runAll()
+		const order = await sdk1.order.upsertOrder(orderForm, false).result
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 1)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 100)
 
-		await sdk2.order.fill({
-			order,
-			originFee: 0,
-			amount: 1,
-			infinite: true,
-		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
+		if (order.type === "RARIBLE_V1") {
+			await sdk2.order.fill({
+				order,
+				originFee: 0,
+				amount: 1,
+				infinite: true,
+			})
+		} else {
+			throw new Error("Should not happen")
+		}
 
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 10)
 		await verifyErc721Owner(conf.testErc721, 1, wallet2.getAddressString())

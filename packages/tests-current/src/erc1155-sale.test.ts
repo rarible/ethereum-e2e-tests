@@ -1,7 +1,6 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
 import { awaitAll } from "./common/await-all"
 import { awaitStockToBe } from "./common/await-stock-to-be"
 import { verifyErc20Balance } from "./common/verify-erc20-balance"
@@ -51,17 +50,20 @@ describe("erc1155-sale", function () {
 			payouts: [],
 			price: 10,
 			takeAssetType: { assetClass: "ERC20", contract: toAddress(conf.testErc20.options.address) },
-		}).then(a => a.build().runAll())
+		})
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 50)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerHasErc20)
 
+		if (order.type !== "RARIBLE_V2") {
+			throw new Error("Should not happen")
+		}
 		await sdk2.order.fill({
 			order,
 			originFee: 0,
 			amount: 10,
 			infinite: true,
-		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
+		})
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
@@ -84,7 +86,7 @@ describe("erc1155-sale", function () {
 			originFee: 0,
 			amount: 20,
 			infinite: true,
-		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
+		})
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 700)
 		await awaitStockToBe(sdk1.apis.order, order.hash, 20)
 
@@ -119,7 +121,17 @@ describe("erc1155-sale", function () {
 
 		await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet2.getAddressString(), buyerHasErc20)
 
-		const orderAction = await sdk1.order.sell({
+		const tx = await sdk1.nft.transfer({
+			assetClass: "ERC1155",
+			contract: toAddress(conf.testErc1155.options.address),
+			tokenId: toBigNumber(nftSellerAsset.tokenId.toString()),
+		},
+		toAddress(wallet2.getAddressString()),
+		toBigNumber(nftSellerAsset.amount.toString()),
+		)
+		await tx.wait()
+
+		const order = await sdk1.order.sell({
 			makeAssetType: {
 				assetClass: "ERC1155",
 				contract: toAddress(conf.testErc1155.options.address),
@@ -132,18 +144,6 @@ describe("erc1155-sale", function () {
 			price: 10,
 			takeAssetType: { assetClass: "ERC20", contract: toAddress(conf.testErc20.options.address) },
 		})
-
-		const tx = await sdk1.nft.transfer({
-			assetClass: "ERC1155",
-			contract: toAddress(conf.testErc1155.options.address),
-			tokenId: toBigNumber(nftSellerAsset.tokenId.toString()),
-		},
-		toAddress(wallet2.getAddressString()),
-		toBigNumber(nftSellerAsset.amount.toString()),
-		)
-		await tx.wait()
-
-		const order = await orderAction.build().runAll()
 
 		await verifyErc1155Balance(conf.testErc1155, wallet1.getAddressString(), nftSellerAsset.tokenId.toString(), 0)
 		await awaitStockToBe(sdk1.apis.order, order.hash, 0)
