@@ -21,12 +21,13 @@ describe("transfer test", function () {
 	test("test-erc721 transfer", async () => {
 		await erc721Mint(conf.testErc721, wallet1.getAddressString(), wallet1.getAddressString(), 1)
 
-		await sdk1.nft.transfer({
+		await sdk1.nft.transfer(
+			{
 				assetClass: "ERC721",
 				contract: toAddress(conf.testErc721.options.address),
-				tokenId: toBigNumber('1'),
+				tokenId: toBigNumber("1"),
 			},
-			toAddress(wallet2.getAddressString()),
+			toAddress(wallet2.getAddressString())
 		)
 
 		await verifyErc721Balance(conf.testErc721, wallet2.getAddressString(), 1)
@@ -38,15 +39,16 @@ describe("transfer test", function () {
 		const mintTx = await erc1155Mint(erc1155Contract, wallet1.getAddressString(), wallet1.getAddressString(), 1, 100)
 		await mintTx.wait()
 
-		await sdk1.nft.transfer({
+		await sdk1.nft.transfer(
+			{
 				assetClass: "ERC1155",
 				contract: toAddress(conf.testErc1155.options.address),
-				tokenId: toBigNumber('1'),
+				tokenId: toBigNumber("1"),
 			},
 			toAddress(wallet2.getAddressString()),
-			toBigNumber('50'),
+			toBigNumber("50"),
 		)
 
-		await verifyErc1155Balance(conf.testErc1155, wallet2.getAddressString(), '1', 50)
+		await verifyErc1155Balance(conf.testErc1155, wallet2.getAddressString(), "1", 50)
 	})
 })

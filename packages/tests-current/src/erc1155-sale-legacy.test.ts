@@ -57,7 +57,7 @@ describe("erc1155-sale", function () {
 			take: {
 				assetType: {
 					assetClass: "ERC20",
-					contract: toAddress(conf.testErc20.options.address)
+					contract: toAddress(conf.testErc20.options.address),
 				},
 				value: toBigNumber("500"),
 			},
@@ -79,7 +79,7 @@ describe("erc1155-sale", function () {
 			order,
 			originFee: orderForm.data.fee,
 			amount: 10,
-			infinite: true
+			infinite: true,
 		} as LegacyOrderFillRequest).then(a => a.build().runAll())
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
@@ -90,8 +90,8 @@ describe("erc1155-sale", function () {
 				orderActivityFilter: {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
-					tokenId: toBigNumber('1'),
-					types: ['BID', 'LIST', 'MATCH'],
+					tokenId: toBigNumber("1"),
+					types: ["BID", "LIST", "MATCH"],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(1)
@@ -102,7 +102,7 @@ describe("erc1155-sale", function () {
 			order,
 			originFee: 0,
 			amount: 20,
-			infinite: true
+			infinite: true,
 		} as LegacyOrderFillRequest).then(a => a.build().runAll())
 
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerErc20InitBalance.minus(300).toString())
@@ -113,8 +113,8 @@ describe("erc1155-sale", function () {
 				orderActivityFilter: {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
-					tokenId: toBigNumber('1'),
-					types: ['BID', 'LIST', 'MATCH'],
+					tokenId: toBigNumber("1"),
+					types: ["BID", "LIST", "MATCH"],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(2)

@@ -54,12 +54,12 @@ describe("erc1155-sale", function () {
 		})
 
 		const tx = await sdk1.nft.transfer({
-				assetClass: "ERC1155",
-				contract: toAddress(conf.testErc1155.options.address),
-				tokenId: toBigNumber(nftSellerAsset.tokenId.toString()),
-			},
-			toAddress(wallet2.getAddressString()),
-			toBigNumber(nftSellerAsset.amount.toString()),
+			assetClass: "ERC1155",
+			contract: toAddress(conf.testErc1155.options.address),
+			tokenId: toBigNumber(nftSellerAsset.tokenId.toString()),
+		},
+		toAddress(wallet2.getAddressString()),
+		toBigNumber(nftSellerAsset.amount.toString()),
 		)
 		await tx.wait()
 
@@ -91,7 +91,7 @@ describe("erc1155-sale", function () {
 			maker: toAddress(wallet1.getAddressString()),
 			originFees: [],
 			payouts: [],
-			price: '10',
+			price: "10",
 		})
 
 		const tx = await transferErc20(erc20Contract, toAddress(wallet2.getAddressString()), 100)

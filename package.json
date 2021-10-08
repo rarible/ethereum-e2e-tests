@@ -19,9 +19,8 @@
   "devDependencies": {
     "@ethereumjs/common": "2.4.0",
     "@ethereumjs/tx": "3.3.0",
-    "@roborox/eslint-config-default": "2.2.0",
-    "eslint": "7.10.0",
-    "eslint-config-prettier": "6.11.0",
+    "@rarible/eslint-config-ts": "0.0.5",
+    "eslint": "7.32.0",
     "eth-rpc-errors": "4.0.3",
     "eth-sig-util": "3.0.1",
     "ethereumjs-util": "7.1.0",

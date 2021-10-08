@@ -9,6 +9,7 @@ import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from ".
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
 import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
+import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 
 describe("erc1155-sale", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
@@ -59,7 +60,7 @@ describe("erc1155-sale", function () {
 			order,
 			originFee: 0,
 			amount: 10,
-			infinite: true
+			infinite: true,
 		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
@@ -70,8 +71,8 @@ describe("erc1155-sale", function () {
 				orderActivityFilter: {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
-					tokenId: toBigNumber('1'),
-					types: ['BID', 'LIST', 'MATCH'],
+					tokenId: toBigNumber("1"),
+					types: ["BID", "LIST", "MATCH"],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(1)
@@ -82,7 +83,7 @@ describe("erc1155-sale", function () {
 			order,
 			originFee: 0,
 			amount: 20,
-			infinite: true
+			infinite: true,
 		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 700)
 		await awaitStockToBe(sdk1.apis.order, order.hash, 20)
@@ -92,8 +93,8 @@ describe("erc1155-sale", function () {
 				orderActivityFilter: {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
-					tokenId: toBigNumber('1'),
-					types: ['BID', 'LIST', 'MATCH'],
+					tokenId: toBigNumber("1"),
+					types: ["BID", "LIST", "MATCH"],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(2)
@@ -133,12 +134,12 @@ describe("erc1155-sale", function () {
 		})
 
 		const tx = await sdk1.nft.transfer({
-				assetClass: "ERC1155",
-				contract: toAddress(conf.testErc1155.options.address),
-				tokenId: toBigNumber(nftSellerAsset.tokenId.toString()),
-			},
-			toAddress(wallet2.getAddressString()),
-			toBigNumber(nftSellerAsset.amount.toString()),
+			assetClass: "ERC1155",
+			contract: toAddress(conf.testErc1155.options.address),
+			tokenId: toBigNumber(nftSellerAsset.tokenId.toString()),
+		},
+		toAddress(wallet2.getAddressString()),
+		toBigNumber(nftSellerAsset.amount.toString()),
 		)
 		await tx.wait()
 

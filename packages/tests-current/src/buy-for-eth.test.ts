@@ -1,8 +1,8 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { ERC721VersionEnum } from "@rarible/protocol-ethereum-sdk/build/nft/contracts/domain"
 import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
+import { createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/nft/test/mint"
 import { verifyNewOwner } from "./common/verify-new-owner"
 import { verifyEthBalance } from "./common/verify-eth-balance"
 import { toBn } from "./common/to-bn"
@@ -19,18 +19,11 @@ describe("test buy erc721 for eth", function () {
 
 	test("test buy erc721 for eth", async () => {
 		const mintResponse = await sdk1.nft.mint({
-			collection: {
-				features: ["SECONDARY_SALE_FEES", "MINT_AND_TRANSFER"],
-				id: erc721Address,
-				name: "Test-collection",
-				type: "ERC721",
-				supportsLazyMint: true,
-				version: ERC721VersionEnum.ERC721V3,
-			},
-			uri: '//testUri',
+			collection: createErc721V3Collection(erc721Address),
+			uri: "//testUri",
 			creators: [{ account: toAddress(wallet1.getAddressString()), value: 10000 }],
 			royalties: [],
-			lazy: false
+			lazy: false,
 		})
 
 		const { tokenId } = parseItemId(mintResponse.itemId)
@@ -54,7 +47,7 @@ describe("test buy erc721 for eth", function () {
 			order,
 			originFee: 0,
 			amount: 1,
-			infinite: true
+			infinite: true,
 		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
 
 		await verifyNewOwner(sdk2, mintResponse.itemId, toAddress(wallet2.getAddressString()))

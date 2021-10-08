@@ -8,7 +8,7 @@ export function initProviders({ pk1, pk2 } : { pk1?: string, pk2?: string }) {
 	const web32 = new Web3(provider2)
 
 	return {
-		web31, web32, wallet1, wallet2
+		web31, web32, wallet1, wallet2,
 	}
 }
 
