@@ -39,7 +39,7 @@ describe("erc1155-sale", function () {
 
 		await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet2.getAddressString(), buyerHasErc20)
 
-		const orderAction = await sdk1.order.sell({
+		const orderAction = await sdk1.order.sell.start({
 			makeAssetType: {
 				assetClass: "ERC1155",
 				contract: toAddress(conf.testErc1155.options.address),
@@ -63,7 +63,7 @@ describe("erc1155-sale", function () {
 		)
 		await tx.wait()
 
-		const order = await orderAction.build().runAll()
+		const order = await orderAction.runAll()
 
 		await verifyErc1155Balance(conf.testErc1155, wallet1.getAddressString(), nftSellerAsset.tokenId.toString(), 0)
 		await awaitStockToBe(sdk1.apis.order, order.hash, 0)
@@ -77,7 +77,7 @@ describe("erc1155-sale", function () {
 		await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet1.getAddressString(), 100)
 		await erc721Mint(conf.testErc721, wallet1.getAddressString(), wallet2.getAddressString(), 1)
 
-		const orderAction = await sdk1.order.bid({
+		const orderAction = await sdk1.order.bid.start({
 			makeAssetType: {
 				assetClass: "ERC20",
 				contract: toAddress(conf.testErc20.options.address),
@@ -97,7 +97,7 @@ describe("erc1155-sale", function () {
 		const tx = await transferErc20(erc20Contract, toAddress(wallet2.getAddressString()), 100)
 		await tx.wait()
 
-		const order: Order = await orderAction.build().runAll()
+		const order: Order = await orderAction.runAll()
 		await awaitStockToBe(sdk1.apis.order, order.hash, 0)
 	})
 })
