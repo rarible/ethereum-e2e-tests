@@ -24,7 +24,7 @@ describe("mint test", function () {
 	const erc721Address = toAddress("0x22f8CE349A3338B15D7fEfc013FA7739F5ea2ff7")
 	const erc1155Address = toAddress("0x268dF35c389Aa9e1ce0cd83CF8E5752b607dE90d")
 
-	test("should lazy mint and sell ERC1155 token", async () => {
+	test("should lazy mint and sell ERC721 token", async () => {
 		const mintResponse = await sdk1.nft.mint({
 			collection: createErc721V3Collection(erc721Address),
 			uri: "uri",
@@ -63,7 +63,7 @@ describe("mint test", function () {
 
 	}, 50000)
 
-	test("should lazy mint and sell ERC721 token", async () => {
+	test("should lazy mint and sell ERC1155 token", async () => {
 		const mintResponse = await sdk1.nft.mint({
 			collection: createErc1155V2Collection(erc1155Address),
 			uri: "//testUri",
@@ -78,7 +78,7 @@ describe("mint test", function () {
 		const { tokenId } = parseItemId(mintResponse.itemId)
 		const order = await sdk1.order.sell.start({
 			makeAssetType: {
-				assetClass: "ERC721",
+				assetClass: "ERC1155",
 				contract: toAddress(erc1155Address),
 				tokenId: toBigNumber(tokenId),
 			},
