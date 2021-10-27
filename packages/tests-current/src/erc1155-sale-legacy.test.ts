@@ -1,7 +1,7 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { LegacyOrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
+import { LegacyOrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
 import {OrderForm} from "@rarible/protocol-api-client"
 import { randomWord } from "@rarible/types"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
@@ -70,17 +70,17 @@ describe("erc1155-sale", function () {
 		}
 
 		const upsertOrder = await sdk1.order.upsertOrder(orderForm, false)
-		const order = await upsertOrder.build().runAll()
+		const order = await upsertOrder.runAll()
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 50)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerErc20InitBalance.toString())
 
-		await sdk2.order.fill({
+		await sdk2.order.fill.start({
 			order,
 			originFee: orderForm.data.fee,
 			amount: 10,
 			infinite: true,
-		} as LegacyOrderFillRequest).then(a => a.build().runAll())
+		} as LegacyOrderFillRequest).runAll()
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), sellerErc20InitBalance.plus(100).toString())
@@ -98,12 +98,12 @@ describe("erc1155-sale", function () {
 			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)
 		})
 
-		await sdk2.order.fill({
+		await sdk2.order.fill.start({
 			order,
 			originFee: 0,
 			amount: 20,
 			infinite: true,
-		} as LegacyOrderFillRequest).then(a => a.build().runAll())
+		} as LegacyOrderFillRequest).runAll()
 
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerErc20InitBalance.minus(300).toString())
 		await awaitStockToBe(sdk1.apis.order, order.hash, 20)

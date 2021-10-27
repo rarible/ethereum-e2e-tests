@@ -1,8 +1,8 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
-import { createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/nft/test/mint"
+import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
+import { createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/common/mint"
 import { verifyNewOwner } from "./common/verify-new-owner"
 import { verifyEthBalance } from "./common/verify-eth-balance"
 import { toBn } from "./common/to-bn"
@@ -27,7 +27,7 @@ describe("test buy erc721 for eth", function () {
 		})
 
 		const { tokenId } = parseItemId(mintResponse.itemId)
-		const order = await sdk1.order.sell({
+		const order = await sdk1.order.sell.start({
 			makeAssetType: {
 				assetClass: "ERC721",
 				contract: toAddress(erc721Address),
@@ -39,16 +39,15 @@ describe("test buy erc721 for eth", function () {
 			payouts: [],
 			price: 1000000,
 			takeAssetType: { assetClass: "ETH" },
-
-		}).then(a => a.build().runAll())
+		}).runAll()
 
 		const balanceBefore = await web32.eth.getBalance(wallet2.getAddressString())
-		await sdk2.order.fill({
+		await sdk2.order.fill.start({
 			order,
 			originFee: 0,
 			amount: 1,
 			infinite: true,
-		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
+		} as RaribleV2OrderFillRequest).runAll()
 
 		await verifyNewOwner(sdk2, mintResponse.itemId, toAddress(wallet2.getAddressString()))
 		await verifyEthBalance(web32, toAddress(wallet2.getAddressString()), toBn(balanceBefore).minus(1000000).toString())
