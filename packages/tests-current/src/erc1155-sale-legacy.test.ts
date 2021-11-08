@@ -2,7 +2,7 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { LegacyOrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
-import {OrderForm} from "@rarible/protocol-api-client"
+import {OrderForm} from "@rarible/ethereum-api-client"
 import { randomWord } from "@rarible/types"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
@@ -69,7 +69,7 @@ describe("erc1155-sale", function () {
 			salt: toBigNumber(toBn(randomWord(), 16).toString(10)) as any,
 		}
 
-		const upsertOrder = await sdk1.order.upsertOrder(orderForm, false)
+		const upsertOrder = await sdk1.order.upsert(orderForm, false)
 		const order = await upsertOrder.runAll()
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 50)

@@ -10,7 +10,7 @@ import { initProvider } from "./common/init-providers"
 
 describe("mint legacy test", function () {
 	const { web3 } = initProvider()
-
+	
 	const sdk = createRaribleSdk(new Web3Ethereum({ web3: web3 }), "e2e")
 
 	const erc721Address = toAddress("0x87ECcc03BaBC550c919Ad61187Ab597E9E7f7C21")

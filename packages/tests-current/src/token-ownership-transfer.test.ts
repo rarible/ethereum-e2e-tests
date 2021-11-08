@@ -18,7 +18,7 @@ describe("transfer token ownership", function () {
 		testErc721: deployTestErc721Rarible(web31),
 		testErc1155: deployTestErc1155(web31),
 	})
-
+	
 	const sdk = createRaribleSdk(new Web3Ethereum({web3: web31}), "e2e")
 
 	test("transfer ownership of ERC721Rarible", async () => {
