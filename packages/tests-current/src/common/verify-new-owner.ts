@@ -1,5 +1,5 @@
 import { RaribleSdk } from "@rarible/protocol-ethereum-sdk"
-import { Address } from "@rarible/protocol-api-client"
+import { Address } from "@rarible/ethereum-api-client"
 import { retry } from "./retry"
 
 export async function verifyNewOwner(sdk: RaribleSdk, tokenId: string, expectedOwner: Address) {
