@@ -2,7 +2,6 @@ import type {AbiItem} from "web3-utils"
 import Web3 from "web3"
 import {Address} from "@rarible/ethereum-api-client"
 import {Contract} from "web3-eth-contract"
-import {Ethereum, EthereumContract} from "@rarible/ethereum-provider"
 import {sentTx} from "@rarible/protocol-ethereum-sdk/build/common/send-transaction"
 
 const testErc1155Rarible: AbiItem[] = [
