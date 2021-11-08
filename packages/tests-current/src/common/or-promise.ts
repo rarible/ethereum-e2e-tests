@@ -1,1 +1,1 @@
-type OrPromise<T> = T | Promise<T>
+// type OrPromise<T> = T | Promise<T>
