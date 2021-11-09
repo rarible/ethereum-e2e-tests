@@ -1,4 +1,4 @@
-import {NftItem} from "@rarible/protocol-api-client/build/models"
+import {NftItem} from "@rarible/ethereum-api-client/build/models"
 import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
 import {retry} from "./retry"

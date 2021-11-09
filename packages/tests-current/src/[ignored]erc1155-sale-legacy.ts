@@ -1,8 +1,8 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { LegacyOrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
-import {OrderForm} from "@rarible/protocol-api-client"
+import { LegacyOrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
+import {OrderActivityFilterByItemTypes, OrderForm} from "@rarible/ethereum-api-client"
 import { randomWord } from "@rarible/types"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
@@ -12,6 +12,14 @@ import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from ".
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
 import { toBn } from "./common/to-bn"
+
+// **
+// **	TO MAKE IT WORK:
+// **	1. REFACTOR THE CODE
+// **	2. REMOVE [ignored] PART OF THE FILE NAME
+// **	3. ADD ".TEST" BETWEEN FILE NAME AND EXTENSION - ERC1155-SALE-LEGACY.TEST.TS
+// **	4. RUN "YARN TEST"
+// **
 
 describe("erc1155-sale", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
@@ -75,12 +83,12 @@ describe("erc1155-sale", function () {
 		await awaitStockToBe(sdk1.apis.order, order.hash, 50)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerErc20InitBalance.toString())
 
-		await sdk2.order.fill({
+		await sdk2.order.fill.start({
 			order,
 			originFee: orderForm.data.fee,
 			amount: 10,
 			infinite: true,
-		} as LegacyOrderFillRequest).then(a => a.build().runAll())
+		} as LegacyOrderFillRequest).runAll()
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), sellerErc20InitBalance.plus(100).toString())
@@ -91,19 +99,19 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: ["BID", "LIST", "MATCH"],
+					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(1)
 			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)
 		})
 
-		await sdk2.order.fill({
+		await sdk2.order.fill.start({
 			order,
 			originFee: 0,
 			amount: 20,
 			infinite: true,
-		} as LegacyOrderFillRequest).then(a => a.build().runAll())
+		} as LegacyOrderFillRequest).runAll()
 
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerErc20InitBalance.minus(300).toString())
 		await awaitStockToBe(sdk1.apis.order, order.hash, 20)
@@ -114,8 +122,7 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: ["BID", "LIST", "MATCH"],
-				},
+					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(2)
 			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)

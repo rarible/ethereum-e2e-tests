@@ -1,8 +1,8 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { randomWord, toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order"
-import { OrderForm } from "@rarible/protocol-api-client"
+import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
+import {OrderActivityFilterByItemTypes, OrderForm} from "@rarible/ethereum-api-client"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
@@ -12,6 +12,14 @@ import { verifyErc721Owner } from "./common/verify-erc721-owner"
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
 import { toBn } from "./common/to-bn"
+
+// **
+// **	TO MAKE IT WORK:
+// **	1. REFACTOR THE CODE
+// **	2. REMOVE [ignored] PART OF THE FILE NAME
+// **	3. ADD ".TEST" BETWEEN FILE NAME AND EXTENSION - ERC721-SALE-LEGACY.TEST.TS
+// **	4. RUN "YARN TEST"
+// **
 
 describe("erc721-sale", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
@@ -52,18 +60,18 @@ describe("erc721-sale", function () {
 			},
 			salt: toBigNumber(toBn(randomWord(), 16).toString(10)) as any,
 		}
-		const upsertOrder = await sdk1.order.upsertOrder(orderForm, false)
+		const upsertOrder = await sdk1.order.upsert(orderForm, false)
 		const order = await upsertOrder.build().runAll()
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 1)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 100)
 
-		await sdk2.order.fill({
+		await sdk2.order.fill.start({
 			order,
 			originFee: 0,
 			amount: 1,
 			infinite: true,
-		} as RaribleV2OrderFillRequest).then(a => a.build().runAll())
+		} as RaribleV2OrderFillRequest).runAll()
 
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 10)
 		await verifyErc721Owner(conf.testErc721, 1, wallet2.getAddressString())
@@ -76,7 +84,7 @@ describe("erc721-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc721.options.address),
 					tokenId: toBigNumber("1"),
-					types: ["MATCH", "LIST", "BID"],
+					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(a.items.filter(a => a["@type"] === "match")).toHaveLength(1)

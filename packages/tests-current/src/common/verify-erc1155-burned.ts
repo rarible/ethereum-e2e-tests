@@ -1,5 +1,5 @@
 import { EthereumContract } from "@rarible/ethereum-provider"
-import { Address } from "@rarible/protocol-api-client"
+import { Address } from "@rarible/ethereum-api-client"
 
 export async function verifyErc1155Burned(
 	c: EthereumContract,

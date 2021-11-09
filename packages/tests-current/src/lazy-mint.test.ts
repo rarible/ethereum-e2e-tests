@@ -1,8 +1,8 @@
 import { toAddress } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { createErc1155V2Collection, createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/nft/test/mint"
-import { deployTestErc721 } from "./contracts/test-erc721"
+import { createErc1155V2Collection, createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/common/mint"
+import { deployTestErc721Rarible } from "./contracts/test-erc721-rarible"
 import { awaitAll } from "./common/await-all"
 import { verifyMinted } from "./common/verify-minted"
 import { deployTestErc1155 } from "./contracts/test-erc1155"
@@ -14,7 +14,7 @@ describe("lazy-mint test", function () {
 	const sdk = createRaribleSdk(new Web3Ethereum({ web3: web3 }), "e2e")
 
 	const conf = awaitAll({
-		testErc721: deployTestErc721(web3),
+		testErc721: deployTestErc721Rarible(web3),
 		testErc1155: deployTestErc1155(web3),
 	})
 
