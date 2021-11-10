@@ -1,5 +1,5 @@
 import Web3 from "web3"
-import { Address } from "@rarible/protocol-api-client"
+import { Address } from "@rarible/ethereum-api-client"
 import { toBn } from "./to-bn"
 
 export async function verifyEthBalance(web3: Web3, address: Address, expectedBalance: string | number) {

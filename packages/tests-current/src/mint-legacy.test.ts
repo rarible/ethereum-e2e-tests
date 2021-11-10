@@ -4,7 +4,7 @@ import { Web3Ethereum } from "@rarible/web3-ethereum"
 import {
 	createErc1155V1Collection,
 	createErc721V2Collection,
-} from "@rarible/protocol-ethereum-sdk/build/nft/test/mint"
+} from "@rarible/protocol-ethereum-sdk/build/common/mint"
 import { verifyMinted } from "./common/verify-minted"
 import { initProvider } from "./common/init-providers"
 

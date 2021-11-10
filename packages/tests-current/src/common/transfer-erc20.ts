@@ -1,5 +1,5 @@
 import { EthereumContract } from "@rarible/ethereum-provider"
-import { Address } from "@rarible/protocol-api-client"
+import { Address } from "@rarible/ethereum-api-client"
 
 export function transferErc20(c: EthereumContract, to: Address, amount: number) {
 	return c.functionCall("transfer", to, amount).send()

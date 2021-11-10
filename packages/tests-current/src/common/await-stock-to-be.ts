@@ -1,4 +1,4 @@
-import { OrderControllerApi } from "@rarible/protocol-api-client"
+import { OrderControllerApi } from "@rarible/ethereum-api-client"
 import { retry } from "./retry"
 
 export async function awaitStockToBe(api: OrderControllerApi, hash: string, value: string | number) {
