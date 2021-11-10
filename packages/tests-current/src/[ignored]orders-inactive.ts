@@ -71,7 +71,7 @@ describe("erc1155-sale", function () {
 		)
 		await tx.wait()
 
-		const order = await orderAction.build.runAll();
+		const order = await orderAction.build.runAll()
 
 		await verifyErc1155Balance(conf.testErc1155, wallet1.getAddressString(), nftSellerAsset.tokenId.toString(), 0)
 		await awaitStockToBe(sdk1.apis.order, order.hash, 0)

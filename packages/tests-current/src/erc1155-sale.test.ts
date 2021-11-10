@@ -2,15 +2,14 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
+import {OrderActivityFilterByItemTypes} from "@rarible/ethereum-api-client"
 import { awaitAll } from "./common/await-all"
 import { awaitStockToBe } from "./common/await-stock-to-be"
 import { verifyErc20Balance } from "./common/verify-erc20-balance"
 import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
-import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
-import {OrderActivityFilterByItemTypes} from "@rarible/ethereum-api-client";
 
 describe("erc1155-sale", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
@@ -73,7 +72,9 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(1)
@@ -95,7 +96,9 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(2)
