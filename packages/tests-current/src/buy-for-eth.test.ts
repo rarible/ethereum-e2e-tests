@@ -37,7 +37,7 @@ describe("test buy erc721 for eth", function () {
 			maker: toAddress(wallet1.getAddressString()),
 			originFees: [],
 			payouts: [],
-			price: 1000000,
+			price: 100,
 			takeAssetType: { assetClass: "ETH" },
 
 		}).runAll()
@@ -51,6 +51,6 @@ describe("test buy erc721 for eth", function () {
 		} as RaribleV2OrderFillRequest).runAll()
 
 		await verifyNewOwner(sdk2, mintResponse.itemId, toAddress(wallet2.getAddressString()))
-		await verifyEthBalance(web32, toAddress(wallet2.getAddressString()), toBn(balanceBefore).minus(1000000).toString())
+		await verifyEthBalance(web32, toAddress(wallet2.getAddressString()), toBn(balanceBefore).minus(100).toString())
 	})
 })
