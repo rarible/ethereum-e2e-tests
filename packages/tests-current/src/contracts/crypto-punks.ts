@@ -1,16 +1,10 @@
 import type {AbiItem} from "web3-utils"
 import Web3 from "web3"
 import {Contract} from "web3-eth-contract"
-import { Ethereum, EthereumContract } from "@rarible/ethereum-provider";
 
 export async function cryptoPunksContract(web3: Web3): Promise<Contract> {
 	let punksAddress = "0xF5E37Dac3d0093cFef3117DF211430CF4E175b85"
 	return new web3.eth.Contract(cryptoPunksAbi, punksAddress)
-}
-
-export function cryptoPunksEthereumContract(ethereum: Ethereum): EthereumContract {
-	let punksAddress = "0xF5E37Dac3d0093cFef3117DF211430CF4E175b85"
-	return ethereum.createContract(cryptoPunksAbi, punksAddress)
 }
 
 const cryptoPunksAbi: AbiItem[] = [

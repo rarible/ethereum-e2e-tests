@@ -85,7 +85,7 @@ describe("crypto punks test", function () {
 		const price = 7
 
 		// create new rarible order
-		// const order = await sdk1.order.sell.start({
+		// const order = await sdk1.order.sell({
 		// 	makeAssetType: {
 		// 		assetClass: "CRYPTO_PUNKS",
 		// 		contract: toAddress(cryptoPunksAddress),
@@ -97,7 +97,7 @@ describe("crypto punks test", function () {
 		// 	payouts: [],
 		// 	price: price,
 		// 	takeAssetType: { assetClass: "ETH" },
-		// }).runAll()
+		// })
 
 		// get existing order
 		const orders = (await sdk1.apis.order.getSellOrdersByItem({
@@ -118,23 +118,12 @@ describe("crypto punks test", function () {
 		try {
 			await sdk2.order.fill({
 				order,
-				originFee: 0,
 				amount: 1,
-				infinite: true,
+				// infinite: true,
+				// payouts: [{account: toAddress(wallet2Address), value: 10000}],
+				// originFees: [],
 			})
 		} catch (e) {
-			console.log("error with RaribleV2OrderFillRequest: " + e)
-		}
-
-		try {
-			await sdk2.order.fill({
-				order,
-				originFee: 0,
-				amount: 1,
-				infinite: true,
-			})
-		} catch (e) {
-			console.log("error with CryptoPunksOrderFillRequest: " + e)
 			throw new Error(`fill order failed with error: ${e}`)
 		}
 
