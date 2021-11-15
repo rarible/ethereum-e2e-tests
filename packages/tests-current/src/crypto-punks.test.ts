@@ -1,16 +1,15 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
-import { toAddress } from "@rarible/types"
+import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { Contract } from "web3-eth-contract"
 import { GetSellOrdersByItemRequest } from "@rarible/ethereum-api-client"
-import { EthereumContract } from "@rarible/ethereum-provider"
 import { RaribleV2Order } from "@rarible/ethereum-api-client"
 import { awaitOwnershipValueToBe } from "./common/await-ownership-value-to-be"
 import { awaitNoOwnership } from "./common/await-no-ownership"
 import { initProviders } from "./common/init-providers"
 import { verifyErc721Balance } from "./common/verify-erc721-balance"
 import { verifyCryptoPunkOwner } from "./common/verify-crypto-punk-owner"
-import { cryptoPunksContract, cryptoPunksEthereumContract } from "./contracts/crypto-punks"
+import { cryptoPunksContract } from "./contracts/crypto-punks"
 import { verifyEthBalance } from "./common/verify-eth-balance"
 import { toBn } from "./common/to-bn"
 
@@ -23,13 +22,11 @@ describe("crypto punks test", function () {
 	const sdk1 = createRaribleSdk(new Web3Ethereum({ web3: web31 }), "e2e")
 	const wallet1Address = wallet1.getAddressString()
 	const nftOwnership = sdk1.apis.nftOwnership
-	const ethereum1 = new Web3Ethereum({ web3: web31 })
 
 	const sdk2 = createRaribleSdk(new Web3Ethereum({ web3: web32 }), "e2e")
 	const wallet2Address = wallet2.getAddressString()
 
 	let cryptoPunks: Contract
-	let cryptoPunksEC: EthereumContract
 	let cryptoPunksAddress: string
 	const punkIndex = 9
 
@@ -40,7 +37,6 @@ describe("crypto punks test", function () {
 		expect(wallet2Address).toBe("0x04c5e1adfdb11b293398120847fa2bda166a4584")
 
 		cryptoPunks = await cryptoPunksContract(web31)
-		cryptoPunksEC = cryptoPunksEthereumContract(ethereum1)
 		cryptoPunksAddress = cryptoPunks.options.address
 
 		await verifyErc721Balance(cryptoPunks, wallet1Address, 10)
@@ -55,11 +51,10 @@ describe("crypto punks test", function () {
 		await beforeTests()
 
 		await expect(async () => {
-			await sdk2.nft.transferCryptoPunks(
+			await sdk2.nft.transfer(
 				{
-					assetClass: "CRYPTO_PUNKS",
 					contract: toAddress(cryptoPunksAddress),
-					punkId: punkIndex,
+					tokenId: toBigNumber(punkIndex.toString()),
 				},
 				toAddress(wallet1Address)
 			)
@@ -69,11 +64,10 @@ describe("crypto punks test", function () {
 	test("test transfer", async () => {
 		await beforeTests()
 
-		await sdk1.nft.transferCryptoPunks(
+		await sdk1.nft.transfer(
 			{
-				assetClass: "CRYPTO_PUNKS",
 				contract: toAddress(cryptoPunksAddress),
-				punkId: punkIndex,
+				tokenId: toBigNumber(punkIndex.toString()),
 			},
 			toAddress(wallet2Address)
 		)
@@ -159,7 +153,7 @@ describe("crypto punks test", function () {
 		await beforeTests()
 
 		const minPrice = 8
-		// await cryptoPunksEC.functionCall("offerPunkForSale", punkIndex, minPrice).send()
+		await cryptoPunks.methods.offerPunkForSale(punkIndex, minPrice).send({from: wallet1Address})
 		//
 		const forSale = await cryptoPunks.methods.punksOfferedForSale(punkIndex).call()
 		console.log(`forSale: ${JSON.stringify(forSale)}`)
@@ -178,11 +172,10 @@ describe("crypto punks test", function () {
 	}, 30000)
 
 	async function transferPunkBackToInitialOwner() {
-		await sdk2.nft.transferCryptoPunks(
+		await sdk2.nft.transfer(
 			{
-				assetClass: "CRYPTO_PUNKS",
 				contract: toAddress(cryptoPunksAddress),
-				punkId: punkIndex,
+				tokenId: toBigNumber(punkIndex.toString()),
 			},
 			toAddress(wallet1Address)
 		)
