@@ -1,18 +1,16 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
+import { OrderActivityFilterByItemTypes, RaribleV2Order } from "@rarible/ethereum-api-client"
 import { awaitAll } from "./common/await-all"
 import { awaitStockToBe } from "./common/await-stock-to-be"
 import { verifyErc20Balance } from "./common/verify-erc20-balance"
 import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
-import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
-import {OrderActivityFilterByItemTypes} from "@rarible/ethereum-api-client";
 
-describe("erc1155-sale", function () {
+describe("erc1155-sale", function() {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
 
 	const ethereum1 = new Web3Ethereum({ web3: web31 })
@@ -40,7 +38,7 @@ describe("erc1155-sale", function () {
 
 		await erc20Mint(conf.testErc20, wallet1.getAddressString(), wallet2.getAddressString(), buyerHasErc20)
 
-		const order = await sdk1.order.sell.start({
+		const order = await sdk1.order.sell({
 			makeAssetType: {
 				assetClass: "ERC1155",
 				contract: toAddress(conf.testErc1155.options.address),
@@ -52,17 +50,17 @@ describe("erc1155-sale", function () {
 			payouts: [],
 			price: 10,
 			takeAssetType: { assetClass: "ERC20", contract: toAddress(conf.testErc20.options.address) },
-		}).runAll()
+		}) as RaribleV2Order
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 50)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerHasErc20)
 
-		await sdk2.order.fill.start({
+		await sdk2.order.fill({
 			order,
 			originFee: 0,
 			amount: 10,
 			infinite: true,
-		} as RaribleV2OrderFillRequest).runAll()
+		})
 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
@@ -73,19 +71,21 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(1)
 			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)
 		})
 
-		await sdk2.order.fill.start({
+		await sdk2.order.fill({
 			order,
 			originFee: 0,
 			amount: 20,
 			infinite: true,
-		} as RaribleV2OrderFillRequest).runAll()
+		})
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 700)
 		await awaitStockToBe(sdk1.apis.order, order.hash, 20)
 
@@ -95,7 +95,9 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(2)

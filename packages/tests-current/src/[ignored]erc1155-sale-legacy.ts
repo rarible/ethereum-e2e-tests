@@ -99,7 +99,9 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(1)
@@ -122,7 +124,10 @@ describe("erc1155-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc1155.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],				},
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
+				},
 			})
 			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(2)
 			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)

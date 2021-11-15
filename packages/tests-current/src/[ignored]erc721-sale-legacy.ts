@@ -2,7 +2,8 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { randomWord, toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
-import {OrderActivityFilterByItemTypes, OrderForm} from "@rarible/ethereum-api-client"
+import { OrderActivityFilterByItemTypes, OrderForm} from "@rarible/ethereum-api-client"
+import { OrderActivityFilterByItemTypes} from "@rarible/ethereum-api-client"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
@@ -84,7 +85,9 @@ describe("erc721-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc721.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(a.items.filter(a => a["@type"] === "match")).toHaveLength(1)

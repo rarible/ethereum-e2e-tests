@@ -22,7 +22,7 @@ describe("lazy-mint test", function () {
 
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc721V3Collection(toAddress(conf.testErc721.options.address)),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
 			lazy: true,
@@ -34,7 +34,7 @@ describe("lazy-mint test", function () {
 
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc1155V2Collection(toAddress(conf.testErc721.options.address)),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
 			supply: 100,

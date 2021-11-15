@@ -16,7 +16,7 @@ describe("mint test", function () {
 	test("should mint ERC721 token", async () => {
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc721V3Collection(erc721Address),
-			uri: "uri",
+			uri: "ipfs://testUri",
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
 			lazy: false,
@@ -29,7 +29,7 @@ describe("mint test", function () {
 
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc1155V2Collection(erc1155Address),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			supply: 100,
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],
