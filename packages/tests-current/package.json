@@ -20,10 +20,10 @@
     "url": "https://github.com/rariblecom/ts-common.git"
   },
   "devDependencies": {
-    "@rarible/ethereum-sdk-test-common": "^0.10.0",
-    "@rarible/protocol-ethereum-sdk": "0.9.6",
-    "@rarible/test-provider": "^0.1.22",
-    "@rarible/web3-ethereum": "0.10.0",
+    "@rarible/ethereum-sdk-test-common": "~0.12.1",
+    "@rarible/protocol-ethereum-sdk": "~0.12.3",
+    "@rarible/test-provider": "~0.5.0",
+    "@rarible/web3-ethereum": "~0.12.1",
     "@types/jest": "^26.0.24",
     "@types/node-fetch": "2.5.12",
     "@types/web3-provider-engine": "^14.0.1",
