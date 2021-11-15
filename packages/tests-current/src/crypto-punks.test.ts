@@ -2,8 +2,7 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { Contract } from "web3-eth-contract"
-import { GetSellOrdersByItemRequest } from "@rarible/ethereum-api-client"
-import { RaribleV2Order } from "@rarible/ethereum-api-client"
+import { GetSellOrdersByItemRequest, Platform, RaribleV2Order } from "@rarible/ethereum-api-client"
 import { awaitOwnershipValueToBe } from "./common/await-ownership-value-to-be"
 import { awaitNoOwnership } from "./common/await-no-ownership"
 import { initProviders } from "./common/init-providers"
@@ -50,117 +49,157 @@ describe("crypto punks test", function () {
 	test("test failed transfer by not an owner", async () => {
 		await beforeTests()
 
-		await expect(async () => {
-			await sdk2.nft.transfer(
-				{
-					contract: toAddress(cryptoPunksAddress),
-					tokenId: toBigNumber(punkIndex.toString()),
-				},
-				toAddress(wallet1Address)
-			)
-		}).rejects.toThrowError("has not any ownerships of punk with Id")
+		try {
+			await expect(async () => {
+				await sdk2.nft.transfer(
+					{
+						contract: toAddress(cryptoPunksAddress),
+						tokenId: toBigNumber(punkIndex.toString()),
+					},
+					toAddress(wallet1Address)
+				)
+			}).rejects.toThrowError("has not any ownerships of token with Id")
+		} finally {
+			await transferPunkBackToInitialOwner()
+		}
 	})
 
 	test("test transfer", async () => {
 		await beforeTests()
 
-		await sdk1.nft.transfer(
-			{
-				contract: toAddress(cryptoPunksAddress),
-				tokenId: toBigNumber(punkIndex.toString()),
-			},
-			toAddress(wallet2Address)
-		)
-		await verifyCryptoPunkOwner(cryptoPunks, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnership, cryptoPunks.options.address, punkIndex, wallet2Address, 1)
+		try {
+			await sdk1.nft.transfer(
+				{
+					contract: toAddress(cryptoPunksAddress),
+					tokenId: toBigNumber(punkIndex.toString()),
+				},
+				toAddress(wallet2Address)
+			)
+			await verifyCryptoPunkOwner(cryptoPunks, punkIndex, wallet2Address)
+			await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
+			await awaitOwnershipValueToBe(nftOwnership, cryptoPunks.options.address, punkIndex, wallet2Address, 1)
 
-		await transferPunkBackToInitialOwner()
-
+		} finally {
+			await transferPunkBackToInitialOwner()
+		}
 	}, 30000)
 
 	test("test buy for eth by rarible order", async () => {
 		await beforeTests()
 
-		const price = 7
-
-		// create new rarible order
-		// const order = await sdk1.order.sell({
-		// 	makeAssetType: {
-		// 		assetClass: "CRYPTO_PUNKS",
-		// 		contract: toAddress(cryptoPunksAddress),
-		// 		punkId: punkIndex,
-		// 	},
-		// 	amount: 1,
-		// 	maker: toAddress(wallet1Address),
-		// 	originFees: [],
-		// 	payouts: [],
-		// 	price: price,
-		// 	takeAssetType: { assetClass: "ETH" },
-		// })
-
-		// get existing order
-		const orders = (await sdk1.apis.order.getSellOrdersByItem({
-			contract: cryptoPunksAddress,
-			tokenId: punkIndex.toString(),
-		} as GetSellOrdersByItemRequest)).orders
-		const raribleOrder = orders
-			.filter(a => a["type"] === "RARIBLE_V2")
-			.map(o => o as RaribleV2Order)
-		expect(raribleOrder.length).toBeGreaterThan(0)
-
-		const order = raribleOrder[0]
-		console.log(`order: ${JSON.stringify(order)}`)
-
-
-		const balanceBefore = await web32.eth.getBalance(wallet2Address)
-
 		try {
-			await sdk2.order.fill({
-				order,
-				amount: 1,
-				// infinite: true,
-				// payouts: [{account: toAddress(wallet2Address), value: 10000}],
-				// originFees: [],
-			})
-		} catch (e) {
-			throw new Error(`fill order failed with error: ${e}`)
+			const price = 7
+
+			// create new rarible order
+			// const order = await sdk1.order.sell({
+			// 	makeAssetType: {
+			// 		assetClass: "CRYPTO_PUNKS",
+			// 		contract: toAddress(cryptoPunksAddress),
+			// 		punkId: punkIndex,
+			// 	},
+			// 	amount: 1,
+			// 	maker: toAddress(wallet1Address),
+			// 	originFees: [],
+			// 	payouts: [],
+			// 	price: price,
+			// 	takeAssetType: { assetClass: "ETH" },
+			// })
+
+			// get existing order
+			const orders = (await sdk1.apis.order.getSellOrdersByItem({
+				contract: cryptoPunksAddress,
+				tokenId: punkIndex.toString(),
+			} as GetSellOrdersByItemRequest)).orders
+			const raribleOrders = orders
+				.filter(a => a["type"] === "RARIBLE_V2")
+				.map(o => o as RaribleV2Order)
+			expect(raribleOrders.length).toBeGreaterThan(0)
+
+			const order = raribleOrders[0]
+			console.log(`order: ${JSON.stringify(order)}`)
+
+
+			const balanceBefore = await web32.eth.getBalance(wallet2Address)
+
+			try {
+				await sdk2.order.fill({
+					order,
+					amount: 1,
+					// infinite: true,
+					// payouts: [{account: toAddress(wallet2Address), value: 10000}],
+					// originFees: [],
+				})
+			} catch (e) {
+				throw new Error(`fill order failed with error: ${e}`)
+			}
+
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore).minus(price).toString())
+
+			await verifyCryptoPunkOwner(cryptoPunks, punkIndex, wallet2Address)
+			await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
+			await awaitOwnershipValueToBe(nftOwnership, cryptoPunks.options.address, punkIndex, wallet2Address, 1)
+
+		} finally {
+			await transferPunkBackToInitialOwner()
 		}
-
-		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore).minus(price).toString())
-
-		await verifyCryptoPunkOwner(cryptoPunks, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnership, cryptoPunks.options.address, punkIndex, wallet2Address, 1)
-
-		await transferPunkBackToInitialOwner()
-
 	}, 30000)
 
 
 	test("test buy for eth by crypto punk market", async () => {
 		await beforeTests()
 
-		const minPrice = 8
-		await cryptoPunks.methods.offerPunkForSale(punkIndex, minPrice).send({from: wallet1Address})
-		//
-		const forSale = await cryptoPunks.methods.punksOfferedForSale(punkIndex).call()
-		console.log(`forSale: ${JSON.stringify(forSale)}`)
-		expect(forSale.isForSale).toBe(true)
-		expect(forSale.seller.toLowerCase()).toBe(wallet1Address)
-		expect(forSale.minValue).toBe(minPrice.toString())
-		expect(forSale.punkIndex).toBe(punkIndex.toString())
+		try {
+			const minPrice = 8
+			// await cryptoPunks.methods.offerPunkForSale(punkIndex, minPrice).send({from: wallet1Address})
+			const forSale = await cryptoPunks.methods.punksOfferedForSale(punkIndex).call()
+			console.log(`forSale: ${JSON.stringify(forSale)}`)
+			expect(forSale.isForSale).toBe(true)
+			expect(forSale.seller.toLowerCase()).toBe(wallet1Address)
+			expect(forSale.minValue).toBe(minPrice.toString())
+			expect(forSale.punkIndex).toBe(punkIndex.toString())
 
-		const orders = (await sdk1.apis.order.getSellOrdersByItem({
-			contract: cryptoPunksAddress,
-			tokenId: punkIndex.toString(),
-		})).orders
-		// const raribleOrder = orders.filter(a => a["type"] === "CRYPTO_PUNK")
-		// expect(raribleOrder.length).toBeGreaterThan(0)
-		console.log(`orders: ${JSON.stringify(orders)}`)
+			const orders = (await sdk1.apis.order.getSellOrdersByItem({
+				contract: cryptoPunksAddress,
+				tokenId: punkIndex.toString(),
+				platform: Platform.ALL,
+			})).orders
+			const cryptoPunkOrders = orders
+				.filter(a => a["type"] === "CRYPTO_PUNK")
+				.map(o => o as RaribleV2Order)
+			expect(cryptoPunkOrders.length).toBeGreaterThan(0)
+
+			const order = cryptoPunkOrders[0]
+			console.log(`order: ${JSON.stringify(order)}`)
+
+			const balanceBefore = await web32.eth.getBalance(wallet2Address)
+
+			try {
+				await sdk2.order.fill({
+					order,
+					amount: 1,
+					infinite: true,
+				})
+			} catch (e) {
+				throw new Error(`fill order failed with error: ${e}`)
+			}
+
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore).minus(minPrice).toString())
+
+			await verifyCryptoPunkOwner(cryptoPunks, punkIndex, wallet2Address)
+			await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
+			await awaitOwnershipValueToBe(nftOwnership, cryptoPunks.options.address, punkIndex, wallet2Address, 1)
+		} finally {
+			await transferPunkBackToInitialOwner()
+		}
+
 	}, 30000)
 
 	async function transferPunkBackToInitialOwner() {
+		const punkOwner = await cryptoPunks.methods.punkIndexToAddress(punkIndex).call()
+		if (punkOwner.toLowerCase() === wallet1Address) {
+			return
+		}
+
 		await sdk2.nft.transfer(
 			{
 				contract: toAddress(cryptoPunksAddress),
