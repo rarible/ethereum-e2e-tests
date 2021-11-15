@@ -19,4 +19,4 @@ You are welcome to [suggest features](https://github.com/rarible/protocol/discus
 
 ## License
 
-End2End tests for Rarible Protocol is available under [MIT License](LICENSE).
+End2End tests for Rarible Protocol are available under [MIT License](LICENSE).
