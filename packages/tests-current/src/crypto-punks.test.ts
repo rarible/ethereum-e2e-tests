@@ -3,11 +3,8 @@ import { toAddress } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { Contract } from "web3-eth-contract"
 import { GetSellOrdersByItemRequest } from "@rarible/ethereum-api-client"
-import {
-	CryptoPunksOrderFillRequest,
-	RaribleV2OrderFillRequest,
-} from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
 import { EthereumContract } from "@rarible/ethereum-provider"
+import { RaribleV2Order } from "@rarible/ethereum-api-client"
 import { awaitOwnershipValueToBe } from "./common/await-ownership-value-to-be"
 import { awaitNoOwnership } from "./common/await-no-ownership"
 import { initProviders } from "./common/init-providers"
@@ -113,7 +110,9 @@ describe("crypto punks test", function () {
 			contract: cryptoPunksAddress,
 			tokenId: punkIndex.toString(),
 		} as GetSellOrdersByItemRequest)).orders
-		const raribleOrder = orders.filter(a => a["type"] === "RARIBLE_V2")
+		const raribleOrder = orders
+			.filter(a => a["type"] === "RARIBLE_V2")
+			.map(o => o as RaribleV2Order)
 		expect(raribleOrder.length).toBeGreaterThan(0)
 
 		const order = raribleOrder[0]
@@ -123,23 +122,23 @@ describe("crypto punks test", function () {
 		const balanceBefore = await web32.eth.getBalance(wallet2Address)
 
 		try {
-			await sdk2.order.fill.start({
+			await sdk2.order.fill({
 				order,
 				originFee: 0,
 				amount: 1,
 				infinite: true,
-			} as RaribleV2OrderFillRequest).runAll()
+			})
 		} catch (e) {
 			console.log("error with RaribleV2OrderFillRequest: " + e)
 		}
 
 		try {
-			await sdk2.order.fill.start({
+			await sdk2.order.fill({
 				order,
 				originFee: 0,
 				amount: 1,
 				infinite: true,
-			} as CryptoPunksOrderFillRequest).runAll()
+			})
 		} catch (e) {
 			console.log("error with CryptoPunksOrderFillRequest: " + e)
 			throw new Error(`fill order failed with error: ${e}`)
@@ -172,7 +171,7 @@ describe("crypto punks test", function () {
 		const orders = (await sdk1.apis.order.getSellOrdersByItem({
 			contract: cryptoPunksAddress,
 			tokenId: punkIndex.toString(),
-		} as GetSellOrdersByItemRequest)).orders
+		})).orders
 		// const raribleOrder = orders.filter(a => a["type"] === "CRYPTO_PUNK")
 		// expect(raribleOrder.length).toBeGreaterThan(0)
 		console.log(`orders: ${JSON.stringify(orders)}`)
