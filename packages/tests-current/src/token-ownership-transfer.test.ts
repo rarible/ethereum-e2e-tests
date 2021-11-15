@@ -32,12 +32,12 @@ describe("transfer token ownership", function () {
 		console.log("Initial owner", wallet1.getAddressString())
 		expect(toAddress(owner)).toBe(initialOwner)
 		await awaitOwnerToBe(sdk.apis.nftCollection, collection, initialOwner)
-		await awaitMinterToBe(sdk.apis.nftCollection, collection, initialOwner)
+		await awaitMinterToBe(sdk.apis.nftCollection, collection, [initialOwner])
 		let newOwner = randomAddress()
 		console.log("New expected owner", wallet1.getAddressString())
 		await conf.testErc721.methods.transferOwnership(newOwner).send({from: initialOwner})
 		await awaitOwnerToBe(sdk.apis.nftCollection, collection, newOwner)
-		await awaitMinterToBe(sdk.apis.nftCollection, collection, newOwner)
+		await awaitMinterToBe(sdk.apis.nftCollection, collection, [newOwner])
 	}, 30000)
 
 	test("test-erc1155 transfer", async () => {
@@ -49,12 +49,12 @@ describe("transfer token ownership", function () {
 		console.log("Initial owner", wallet1.getAddressString())
 		expect(toAddress(owner)).toBe(initialOwner)
 		await awaitOwnerToBe(sdk.apis.nftCollection, collection, initialOwner)
-		await awaitMinterToBe(sdk.apis.nftCollection, collection, initialOwner)
+		await awaitMinterToBe(sdk.apis.nftCollection, collection, [initialOwner])
 		let newOwner = randomAddress()
 		console.log("New expected owner", wallet1.getAddressString())
 		await conf.testErc1155.methods.transferOwnership(newOwner).send({from: initialOwner})
 		await awaitOwnerToBe(sdk.apis.nftCollection, collection, newOwner)
-		await awaitMinterToBe(sdk.apis.nftCollection, collection, newOwner)
+		await awaitMinterToBe(sdk.apis.nftCollection, collection, [newOwner])
 	}, 30000)
 
 	test("transfer ownership of ERC721 Ownable", async () => {
@@ -67,12 +67,12 @@ describe("transfer token ownership", function () {
 		console.log("Initial owner", wallet1.getAddressString())
 		expect(toAddress(owner)).toBe(initialOwner)
 		await awaitOwnerToBe(sdk.apis.nftCollection, collection, initialOwner)
-		await awaitMinterToBe(sdk.apis.nftCollection, collection, undefined)
+		await awaitMinterToBe(sdk.apis.nftCollection, collection, [])
 		let newOwner = randomAddress()
 		console.log("New expected owner", wallet1.getAddressString())
 		await conf.testErc721Ownable.methods.transferOwnership(newOwner).send({from: owner})
 		await awaitOwnerToBe(sdk.apis.nftCollection, collection, newOwner)
-		await awaitMinterToBe(sdk.apis.nftCollection, collection, undefined)
+		await awaitMinterToBe(sdk.apis.nftCollection, collection, [])
 
 	}, 30000)
 })
@@ -83,11 +83,10 @@ async function awaitOwnerToBe(api: NftCollectionControllerApi, collection: strin
 		expect(o.owner).toBe(expectedOwner)
 	})
 }
-async function awaitMinterToBe(api: NftCollectionControllerApi, collection: string, expectedMinter?: Address) {
+
+async function awaitMinterToBe(api: NftCollectionControllerApi, collection: string, minters: Address[]) {
 	await retry(3, async () => {
 		const o = await api.getNftCollectionById({collection})
-		if(o.minters !== undefined){
-			expect(o.minters.pop()).toBe(expectedMinter)
-		}
+		expect(o.minters).toStrictEqual(minters)
 	})
 }
