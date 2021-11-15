@@ -20,7 +20,7 @@ describe("mint legacy test", function () {
 
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc721V2Collection(erc721Address),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			royalties: [],
 		})
 		await verifyMinted(sdk, mintResponse.itemId)
@@ -31,7 +31,7 @@ describe("mint legacy test", function () {
 
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc1155V1Collection(erc1155Address),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			royalties: [],
 			supply: 100,
 		})

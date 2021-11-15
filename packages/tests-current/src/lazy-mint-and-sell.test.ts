@@ -24,7 +24,7 @@ describe("mint test", function () {
 	test("should lazy mint and sell ERC721 token", async () => {
 		const mintResponse = await sdk1.nft.mint({
 			collection: createErc721V3Collection(erc721Address),
-			uri: "uri",
+			uri: "ipfs://testUri",
 			creators: [{ account: toAddress(wallet1.getAddressString()), value: 10000 }],
 			royalties: [],
 			lazy: true,
@@ -62,7 +62,7 @@ describe("mint test", function () {
 	test("should lazy mint and sell ERC1155 token", async () => {
 		const mintResponse = await sdk1.nft.mint({
 			collection: createErc1155V2Collection(erc1155Address),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			supply: 100,
 			creators: [{ account: toAddress(wallet1.getAddressString()), value: 10000 }],
 			royalties: [],

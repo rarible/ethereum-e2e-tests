@@ -23,7 +23,7 @@ describe("burn test", function () {
 		const testErc721 = createMintableTokenContract(ethereum, erc721Address)
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc721V2Collection(erc721Address),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			royalties: [],
 		})
 
@@ -39,7 +39,7 @@ describe("burn test", function () {
 
 		const mintResponse = await sdk.nft.mint({
 			collection: createErc1155V1Collection(erc1155Address),
-			uri: "//testUri",
+			uri: "ipfs://testUri",
 			royalties: [],
 			supply: 10,
 		})
