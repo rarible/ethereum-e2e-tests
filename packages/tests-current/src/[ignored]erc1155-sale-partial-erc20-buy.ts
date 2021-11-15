@@ -1,16 +1,12 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
 import { awaitAll } from "./common/await-all"
 import { awaitStockToBe } from "./common/await-stock-to-be"
-import { verifyErc20Balance } from "./common/verify-erc20-balance"
 import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
-import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
 import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
-import {OrderActivityFilterByItemTypes} from "@rarible/ethereum-api-client";
 
 // **
 // **	TO MAKE IT WORK:
@@ -26,13 +22,12 @@ describe("erc1155-sale", function () {
 
 	const ethereum1 = new Web3Ethereum({ web3: web31 })
 	const sdk1 = createRaribleSdk(ethereum1, "e2e")
-	const sdk2 = createRaribleSdk(new Web3Ethereum({ web3: web32 }), "e2e")
 
 	const conf = awaitAll({
 		testErc20: deployTestErc20(web31),
 		testErc1155: deployTestErc1155(web31),
 	})
-	
+
 	test("test-erc1155 sell/buy, partial buy using erc-20", async () => {
 		const nftSellerAsset = { tokenId: 2, amount: 100 }
 		const buyerHasErc20 = 1000

@@ -2,6 +2,7 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { RaribleV2OrderFillRequest } from "@rarible/protocol-ethereum-sdk/build/order/fill-order/types"
+import {OrderActivityFilterByItemTypes} from "@rarible/ethereum-api-client"
 import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
 import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
 import { awaitAll } from "./common/await-all"
@@ -10,7 +11,6 @@ import { verifyErc20Balance } from "./common/verify-erc20-balance"
 import { verifyErc721Owner } from "./common/verify-erc721-owner"
 import { retry } from "./common/retry"
 import { initProviders } from "./common/init-providers"
-import {OrderActivityFilterByItemTypes} from "@rarible/ethereum-api-client";
 
 describe("erc721-sale", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
@@ -62,7 +62,9 @@ describe("erc721-sale", function () {
 					"@type": "by_item",
 					contract: toAddress(conf.testErc721.options.address),
 					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH, OrderActivityFilterByItemTypes.LIST, OrderActivityFilterByItemTypes.BID],
+					types: [OrderActivityFilterByItemTypes.MATCH,
+						OrderActivityFilterByItemTypes.LIST,
+						OrderActivityFilterByItemTypes.BID],
 				},
 			})
 			expect(a.items.filter(a => a["@type"] === "match")).toHaveLength(1)
