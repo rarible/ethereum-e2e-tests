@@ -139,29 +139,25 @@ describe("crypto punks test", function () {
 			const price = 7
 
 			// create new rarible order
-			// try {
-			// 	await sdk1.order.sell({
-			// 		makeAssetType: {
-			// 			assetClass: "CRYPTO_PUNKS",
-			// 			contract: toAddress(cryptoPunksAddress),
-			// 			tokenId: punkIndex,
-			// 		},
-			// 		amount: 1,
-			// 		maker: toAddress(wallet1Address),
-			// 		originFees: [],
-			// 		payouts: [],
-			// 		price: price,
-			// 		takeAssetType: { assetClass: "ETH" },
-			// 	})
-			// } catch (e) {
-			// 	throw new Error(`order.sell failed with error: ${e}`)
-			// }
+			let order: RaribleV2Order
+			try {
+				order = await sdk1.order.sell({
+					makeAssetType: {
+						assetClass: "CRYPTO_PUNKS",
+						contract: toAddress(cryptoPunksAddress),
+						tokenId: punkIndex,
+					},
+					amount: 1,
+					maker: toAddress(wallet1Address),
+					originFees: [],
+					payouts: [],
+					price: price,
+					takeAssetType: { assetClass: "ETH" },
+				}) as RaribleV2Order
+			} catch (e) {
+				throw new Error(`order.sell failed with error: ${e}`)
+			}
 
-			// get existing order
-			const raribleOrders = await getOrdersForPunkByType("RARIBLE_V2")
-			expect(raribleOrders.length).toBeGreaterThan(0)
-
-			const order = raribleOrders[0]
 			console.log(`order: ${JSON.stringify(order)}`)
 
 			checkCryptoPunkSellOrder(order, price)
@@ -177,6 +173,7 @@ describe("crypto punks test", function () {
 			const balanceBefore = await web32.eth.getBalance(wallet2Address)
 
 			try {
+				console.log("from", await web32.eth.getAccounts())
 				await sdk2.order.fill({
 					order,
 					amount: 1,
