@@ -314,58 +314,50 @@ describe("crypto punks test", function () {
 		})
 	}, 30000)
 
-	// todo wip
 	test("test bid for eth by crypto punk market", async () => {
 		await beforeTests()
 
 		try {
 			const price = 4
 			await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price })
-			const bid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-			console.log(`bid: ${JSON.stringify(bid)}`)
-			expectEqual(bid.hasBid, true, "cryptoPunk bid.hasBid")
-			expectEqual(bid.bidder.toLowerCase(), wallet2Address, "cryptoPunk bid.bidder")
-			expectEqual(bid.value, price.toString(), "cryptoPunk bid.value")
-			expectEqual(bid.punkIndex, punkIndex.toString(), "cryptoPunk bid.punkIndex")
+			const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			console.log(`cryptoPunkBid: ${JSON.stringify(cryptoPunkBid)}`)
+			expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+			expectEqual(cryptoPunkBid.bidder.toLowerCase(), wallet2Address, "cryptoPunkBid.bidder")
+			expectEqual(cryptoPunkBid.value, price.toString(), "cryptoPunkBid.value")
+			expectEqual(cryptoPunkBid.punkIndex, punkIndex.toString(), "cryptoPunkBid.punkIndex")
 
-			// await retry(3, async () => {
-			// 	const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
-			// 	expect(cryptoPunkOrders.length).toBeGreaterThan(0)
-			// })
-			// const orders = (await sdk1.apis.order.getSellOrdersByItem({
-			// 	contract: cryptoPunksAddress,
-			// 	tokenId: punkIndex.toString(),
-			// 	platform: Platform.ALL,
-			// })).orders
-			// const cryptoPunkOrders = orders
-			// 	.filter(a => a["type"] === "CRYPTO_PUNK")
-			// 	.map(o => o as RaribleV2Order)
-			// expect(cryptoPunkOrders.length).toBeGreaterThan(0)
-			//
-			// const order = cryptoPunkOrders[0]
-			// console.log(`order: ${JSON.stringify(order)}`)
-			//
-			// const balanceBefore = await web32.eth.getBalance(wallet2Address)
-			//
-			// try {
-			// 	await sdk2.order.fill({
-			// 		order,
-			// 		amount: 1,
-			// 		infinite: true,
-			// 	})
-			// } catch (e) {
-			// 	throw new Error(`fill order failed with error: ${e}`)
-			// }
-			//
-			// await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore).minus(price).toString())
-			//
-			// await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
-			// await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
-			// await awaitOwnershipValueToBe(nftOwnership, cryptoPunks1.options.address, punkIndex, wallet2Address, 1)
+			const bid = await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkBids.length).toBeGreaterThan(0)
+				return cryptoPunkBids[0]
+			})
+
+			console.log(`bid: ${JSON.stringify(bid)}`)
+			checkCryptoPunkBid(bid, price)
+
+			const balanceBefore = await web32.eth.getBalance(wallet1Address)
+
+			try {
+				await sdk1.order.fill({
+					order: bid,
+					amount: 1,
+					infinite: true,
+				})
+			} catch (e) {
+				console.log(`fill order (bid) failed with error: ${e}`)
+				throw new Error(`fill order (bid) failed with error: ${e}`)
+			}
+
+			await verifyEthBalance(web32, toAddress(wallet1Address), toBn(balanceBefore).plus(price).toString())
+
+			await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
+			await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
+			await awaitOwnershipValueToBe(nftOwnership, cryptoPunks1.options.address, punkIndex, wallet2Address, 1)
+
 		} finally {
 			await transferPunkBackToInitialOwner()
 		}
-
 	}, 30000)
 
 	async function transferPunkBackToInitialOwner() {
@@ -405,6 +397,18 @@ describe("crypto punks test", function () {
 			.map(o => o as RaribleV2Order)
 	}
 
+	async function getBidsForPunkByType(type: String): Promise<RaribleV2Order[]> {
+		const bids = (await sdk1.apis.order.getOrderBidsByItem({
+			contract: cryptoPunksAddress,
+			tokenId: punkIndex.toString(),
+			platform: Platform.ALL,
+		})).orders
+		console.log(`bids: ${JSON.stringify(bids)}`)
+		return bids
+			.filter(a => a["type"] === type)
+			.map(o => o as RaribleV2Order)
+	}
+
 	function checkCryptoPunkSellOrder(order: RaribleV2Order, price: number, taker: string | undefined = undefined) {
 		expectEqual(order.make.assetType.assetClass, "CRYPTO_PUNKS", "type of order.make.asset")
 		expectEqual(order.make.value, "1", "order.make.value")
@@ -414,5 +418,15 @@ describe("crypto punks test", function () {
 		expectEqual(order.taker, taker, "order.taker")
 		expectEqual(order.take.assetType.assetClass, "ETH", "type of order.take.asset")
 		expectEqual(order.take.valueDecimal, Math.pow(10, -18) * price, "order.take.valueDecimal")
+	}
+
+	function checkCryptoPunkBid(bid: RaribleV2Order, price: number, taker: string | undefined = undefined) {
+		expectEqual(bid.make.assetType.assetClass, "ETH", "type of bid.make.asset")
+		expectEqual(bid.make.valueDecimal, Math.pow(10, -18) * price, "bid.make.value")
+		expectEqual(bid.maker, wallet2Address, "bid.maker")
+
+		expectEqual(bid.taker, taker, "bid.taker")
+		expectEqual(bid.take.assetType.assetClass, "CRYPTO_PUNKS", "type of bid.take.asset")
+		expectEqual(bid.take.valueDecimal, 1, "bid.take.valueDecimal")
 	}
 })
