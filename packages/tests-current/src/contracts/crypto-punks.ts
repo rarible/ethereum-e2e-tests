@@ -3,7 +3,7 @@ import Web3 from "web3"
 import {Contract} from "web3-eth-contract"
 
 export async function cryptoPunksContract(web3: Web3): Promise<Contract> {
-	let punksAddress = "0xF5E37Dac3d0093cFef3117DF211430CF4E175b85"
+	let punksAddress = "0x2150332eD9cdCE8Ae06f627fb4ED8e890FAb8049"
 	return new web3.eth.Contract(cryptoPunksAbi, punksAddress)
 }
 
