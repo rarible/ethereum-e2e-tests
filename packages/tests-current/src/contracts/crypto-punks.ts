@@ -1,6 +1,6 @@
-import type {AbiItem} from "web3-utils"
+import type { AbiItem } from "web3-utils"
 import Web3 from "web3"
-import {Contract} from "web3-eth-contract"
+import { Contract } from "web3-eth-contract"
 
 export async function cryptoPunksContract(web3: Web3): Promise<Contract> {
 	let punksAddress = "0x2150332eD9cdCE8Ae06f627fb4ED8e890FAb8049"

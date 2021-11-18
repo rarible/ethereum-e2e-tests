@@ -3,6 +3,7 @@ import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { Contract } from "web3-eth-contract"
 import { Platform, RaribleV2Order } from "@rarible/ethereum-api-client"
+import { Erc20AssetType, CryptoPunksAssetType } from "@rarible/ethereum-api-client/build/models"
 import { awaitOwnershipValueToBe } from "./common/await-ownership-value-to-be"
 import { awaitNoOwnership } from "./common/await-no-ownership"
 import { initProviders } from "./common/init-providers"
@@ -13,6 +14,8 @@ import { verifyEthBalance } from "./common/verify-eth-balance"
 import { toBn } from "./common/to-bn"
 import { retry } from "./common/retry"
 import { expectEqual } from "./common/expect-equal"
+import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
+import { verifyErc20Balance } from "./common/verify-erc20-balance"
 
 describe("crypto punks test", function () {
 
@@ -20,6 +23,7 @@ describe("crypto punks test", function () {
 		pk1: "0x00120de4b1518cf1f16dc1b02f6b4a8ac29e870174cb1d8575f578480930250a",
 		pk2: "0xa0d2baba419896add0b6e638ba4e50190f331db18e3271760b12ce87fa853dcb",
 	})
+
 	const sdk1 = createRaribleSdk(new Web3Ethereum({ web3: web31 }), "e2e")
 	const wallet1Address = wallet1.getAddressString()
 	const nftOwnership = sdk1.apis.nftOwnership
@@ -32,6 +36,10 @@ describe("crypto punks test", function () {
 	let cryptoPunksAddress: string
 	const punkIndex = 9
 
+	let erc20: Contract
+	let erc20Address: string
+	const initErc20Balance = 100
+
 	async function init() {
 		// checking initial addresses
 		expect(wallet1Address).toBe("0xc66d094ed928f7840a6b0d373c1cd825c97e3c7c")
@@ -41,19 +49,28 @@ describe("crypto punks test", function () {
 		cryptoPunksAddress = cryptoPunks1.options.address
 
 		cryptoPunks2 = await cryptoPunksContract(web32)
+
+		erc20 = await deployTestErc20(web31)
+		erc20Address = erc20.options.address
+
+		await erc20Mint(erc20, wallet1Address, wallet2Address, initErc20Balance)
 	}
 
 	async function beforeTests() {
 		await init()
 
 		// checking initial balances
-		// address owns 10 punks
+		// wallet1Address owns 10 punks
 		await verifyErc721Balance(cryptoPunks1, wallet1Address, 10)
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet1Address)
 		await verifyErc721Balance(cryptoPunks1, wallet2Address, 0)
 
 		await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet2Address)
 		await awaitOwnershipValueToBe(nftOwnership, cryptoPunks1.options.address, punkIndex, wallet1Address, 1)
+
+		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance)
+
+		await cryptoPunks1.methods.withdraw().send({ from: wallet1Address })
 	}
 
 	test("check state before test", async () => {
@@ -138,10 +155,9 @@ describe("crypto punks test", function () {
 		try {
 			const price = 7
 
-			// create new rarible order
-			let order: RaribleV2Order
+			let createdOrder: RaribleV2Order
 			try {
-				order = await sdk1.order.sell({
+				createdOrder = await sdk1.order.sell({
 					makeAssetType: {
 						assetClass: "CRYPTO_PUNKS",
 						contract: toAddress(cryptoPunksAddress),
@@ -158,28 +174,26 @@ describe("crypto punks test", function () {
 				throw new Error(`order.sell failed with error: ${e}`)
 			}
 
-			console.log(`order: ${JSON.stringify(order)}`)
+			console.log(`createdOrder: ${JSON.stringify(createdOrder)}`)
+			checkSellOrderWithEth(createdOrder, price)
 
-			checkCryptoPunkSellOrder(order, price)
-			expectEqual(order.make.assetType.assetClass, "CRYPTO_PUNKS", "type of order.make.asset")
-			expectEqual(order.make.value, "1", "order.make.value")
-			expectEqual(order.makeStock, "1", "order.makeStock")
-			expectEqual(order.maker, wallet1Address, "order.maker")
-
-			expectEqual(order.taker, undefined, "order.taker")
-			expectEqual(order.take.assetType.assetClass, "ETH", "type of order.take.asset")
-			expectEqual(order.take.valueDecimal, Math.pow(10, -18) * price, "order.take.valueDecimal")
+			let order = await retry(3, async () => {
+				const orders = await getOrdersForPunkByType("RARIBLE_V2")
+				expect(orders.length).toBeGreaterThan(0)
+				return orders[0]
+			})
+			expectEqual(order.maker, createdOrder.maker, "order.maker")
+			expectEqual(order.make.assetType.assetClass, createdOrder.make.assetType.assetClass, "order.make.assetType")
+			expectEqual(order.make.valueDecimal, createdOrder.make.valueDecimal, "order.make.valueDecimal")
+			expectEqual(order.take.assetType.assetClass, createdOrder.take.assetType.assetClass, "order.take.assetType")
+			expectEqual(order.take.valueDecimal, createdOrder.take.valueDecimal, "order.take.valueDecimal")
 
 			const balanceBefore = await web32.eth.getBalance(wallet2Address)
 
 			try {
-				console.log("from", await web32.eth.getAccounts())
 				await sdk2.order.fill({
 					order,
 					amount: 1,
-					// infinite: true,
-					// payouts: [{account: toAddress(wallet2Address), value: 10000}],
-					// originFees: [],
 				})
 			} catch (e) {
 				console.log("order.fill failed with error: " + e)
@@ -194,17 +208,89 @@ describe("crypto punks test", function () {
 
 		} finally {
 			await transferPunkBackToInitialOwner()
+			await cancelRaribleOrders()
 		}
 	}, 30000)
 
-	test("test sell for eth by crypto punk market", async () => {
+	test("test sell for erc20 by rarible order", async () => {
+		await beforeTests()
+
+		try {
+			const price = 24
+
+			let createdOrder: RaribleV2Order
+			try {
+				createdOrder = await sdk1.order.sell({
+					makeAssetType: {
+						assetClass: "CRYPTO_PUNKS",
+						contract: toAddress(cryptoPunksAddress),
+						tokenId: punkIndex,
+					},
+					amount: 1,
+					maker: toAddress(wallet1Address),
+					originFees: [],
+					payouts: [],
+					price: price,
+					takeAssetType: {
+						assetClass: "ERC20",
+						contract: toAddress(erc20Address),
+					},
+				}) as RaribleV2Order
+			} catch (e) {
+				throw new Error(`order.sell failed with error: ${e}`)
+			}
+
+			console.log(`createdOrder: ${JSON.stringify(createdOrder)}`)
+
+			expectEqual(createdOrder.make.assetType.assetClass, "CRYPTO_PUNKS", "type of order.make.asset")
+			expectEqual(createdOrder.make.value, "1", "order.make.value")
+			expectEqual(createdOrder.makeStock, "1", "order.makeStock")
+			expectEqual(createdOrder.maker, wallet1Address, "order.maker")
+
+			expectEqual(createdOrder.taker, undefined, "order.taker")
+			expectEqual(createdOrder.take.assetType.assetClass, "ERC20", "type of order.take.asset")
+			expectEqual((createdOrder.take.assetType as Erc20AssetType).contract.toLowerCase(), erc20Address.toLowerCase(), "contract of order.take.asset")
+
+			let order = await retry(3, async () => {
+				const orders = await getOrdersForPunkByType("RARIBLE_V2")
+				expect(orders.length).toBeGreaterThan(0)
+				return orders[0]
+			})
+			expectEqual(order.maker, createdOrder.maker, "order.maker")
+			expectEqual(order.make.assetType.assetClass, createdOrder.make.assetType.assetClass, "order.make.assetType")
+			expectEqual(order.make.valueDecimal, createdOrder.make.valueDecimal, "order.make.valueDecimal")
+			expectEqual(order.take.assetType.assetClass, createdOrder.take.assetType.assetClass, "order.take.assetType")
+
+			try {
+				await sdk2.order.fill({
+					order,
+					amount: 1,
+				})
+			} catch (e) {
+				console.log("order.fill failed with error: " + e)
+				throw new Error(`order.fill failed with error: ${e}`)
+			}
+
+			await verifyErc20Balance(erc20, wallet1Address, price)
+			await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
+
+			await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
+			await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
+			await awaitOwnershipValueToBe(nftOwnership, cryptoPunks1.options.address, punkIndex, wallet2Address, 1)
+
+		} finally {
+			await transferPunkBackToInitialOwner()
+			await cancelRaribleOrders()
+		}
+	}, 30000)
+
+	test("test sell by crypto punk market", async () => {
 		await beforeTests()
 
 		try {
 			const minPrice = 8
 			await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({ from: wallet1Address })
 			const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
-			console.log(`forSale: ${JSON.stringify(forSale)}`)
 			expectEqual(forSale.isForSale, true, "cryptoPunk offer.isForSale")
 			expectEqual(forSale.seller.toLowerCase(), wallet1Address, "cryptoPunk offer.seller")
 			expectEqual(forSale.minValue, minPrice.toString(), "cryptoPunk offer.minValue")
@@ -217,8 +303,7 @@ describe("crypto punks test", function () {
 			})
 
 			console.log(`order: ${JSON.stringify(order)}`)
-
-			checkCryptoPunkSellOrder(order, minPrice)
+			checkSellOrderWithEth(order, minPrice)
 
 			const balanceBefore = await web32.eth.getBalance(wallet2Address)
 
@@ -242,7 +327,7 @@ describe("crypto punks test", function () {
 		}
 	}, 30000)
 
-	test("test sell to address for eth by crypto punk market", async () => {
+	test("test sell to address by crypto punk market", async () => {
 		await beforeTests()
 
 		try {
@@ -260,8 +345,7 @@ describe("crypto punks test", function () {
 
 			const order = cryptoPunkOrders[0]
 			console.log(`order: ${JSON.stringify(order)}`)
-
-			checkCryptoPunkSellOrder(order, minPrice, wallet2Address)
+			checkSellOrderWithEth(order, minPrice, wallet2Address)
 
 			const balanceBefore = await web32.eth.getBalance(wallet2Address)
 
@@ -286,6 +370,45 @@ describe("crypto punks test", function () {
 		}
 	}, 30000)
 
+	test("test cancel rarible order", async () => {
+		await beforeTests()
+
+		const price = 24
+		try {
+			await sdk1.order.sell({
+				makeAssetType: {
+					assetClass: "CRYPTO_PUNKS",
+					contract: toAddress(cryptoPunksAddress),
+					tokenId: punkIndex,
+				},
+				amount: 1,
+				maker: toAddress(wallet1Address),
+				originFees: [],
+				payouts: [],
+				price: price,
+				takeAssetType: {
+					assetClass: "ERC20",
+					contract: toAddress(erc20Address),
+				},
+			})
+		} catch (e) {
+			throw new Error(`order.sell failed with error: ${e}`)
+		}
+
+		let order = await retry(3, async () => {
+			const orders = await getOrdersForPunkByType("RARIBLE_V2")
+			expectEqual(orders.length, 1, "orders quantity from api before cancel")
+			return orders[0]
+		})
+
+		await sdk1.order.cancel(order)
+
+		await retry(3, async () => {
+			const orders = await getOrdersForPunkByType("RARIBLE_V2")
+			expectEqual(orders.length, 0, "orders quantity from api after cancel")
+		})
+	}, 30000)
+
 	test("test cancel sell by crypto punk market", async () => {
 		await beforeTests()
 
@@ -301,6 +424,7 @@ describe("crypto punks test", function () {
 		})
 
 		await cryptoPunks1.methods.punkNoLongerForSale(punkIndex).send({ from: wallet1Address })
+
 		const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
 		console.log(`cancelled forSale: ${JSON.stringify(forSale)}`)
 		expectEqual(forSale.isForSale, false, "cryptoPunk cancelled offer.isForSale")
@@ -311,12 +435,114 @@ describe("crypto punks test", function () {
 		})
 	}, 30000)
 
-	test("test bid for eth by crypto punk market", async () => {
+	test("test cancel bid by crypto punk market", async () => {
+		await beforeTests()
+
+		const price = 8
+		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price  })
+		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+
+		await retry(3, async () => {
+			const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+			expect(cryptoPunkBids.length).toBeGreaterThan(0)
+		})
+
+		await cryptoPunks2.methods.withdrawBidForPunk(punkIndex).send({ from: wallet2Address })
+
+		const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+		expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
+
+		await retry(3, async () => {
+			const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+			expectEqual(cryptoPunkBids.length, 0, "crypto punk bids quantity from api")
+		})
+	}, 30000)
+
+	test("test buy using rarible order bid with erc20", async () => {
 		await beforeTests()
 
 		try {
-			const price = 4
+			const price = 24
+
+			let createdBid: RaribleV2Order
+			try {
+				createdBid = await sdk2.order.bid({
+					makeAssetType: {
+						assetClass: "ERC20",
+						contract: toAddress(erc20Address),
+					},
+					amount: 1,
+					maker: toAddress(wallet2Address),
+					originFees: [],
+					payouts: [],
+					price: price,
+					takeAssetType: {
+						assetClass: "CRYPTO_PUNKS",
+						contract: toAddress(cryptoPunksAddress),
+						tokenId: punkIndex,
+					},
+				}) as RaribleV2Order
+			} catch (e) {
+				throw new Error(`order.bid failed with error: ${e}`)
+			}
+
+			console.log(`order: ${JSON.stringify(createdBid)}`)
+
+			expectEqual(createdBid.make.assetType.assetClass, "ERC20", "type of bid.make.asset")
+			expectEqual((createdBid.make.assetType as Erc20AssetType).contract.toLowerCase(), erc20Address.toLowerCase(), "contract of bid.make.asset")
+			expectEqual(createdBid.maker, wallet2Address, "bid.maker")
+
+			expectEqual(createdBid.taker, undefined, "bid.taker")
+			expectEqual(createdBid.take.assetType.assetClass, "CRYPTO_PUNKS", "type of bid.take.asset")
+			const takeAsset = createdBid.take.assetType as CryptoPunksAssetType
+			expectEqual(takeAsset.contract.toLowerCase(), cryptoPunksAddress.toLowerCase(), "contract of bid.take.asset")
+			expectEqual(takeAsset.tokenId, punkIndex, "tokenId of bid.take.asset")
+			expectEqual(createdBid.take.value, "1", "bid.take.value")
+
+			let bid = await retry(3, async () => {
+				const bids = await getBidsForPunkByType("RARIBLE_V2")
+				expect(bids.length).toBeGreaterThan(0)
+				return bids[0]
+			})
+			expectEqual(bid.maker, createdBid.maker, "bid.maker")
+			expectEqual(bid.make.assetType.assetClass, createdBid.make.assetType.assetClass, "bid.make.assetType")
+			expectEqual(bid.make.valueDecimal, createdBid.make.valueDecimal, "bid.make.valueDecimal")
+			expectEqual(bid.take.assetType.assetClass, createdBid.take.assetType.assetClass, "bid.take.assetType")
+
+			try {
+				await sdk1.order.fill({
+					order: bid,
+					amount: price,
+				})
+			} catch (e) {
+				console.log("order.fill failed with error: " + e)
+				throw new Error(`order.fill failed with error: ${e}`)
+			}
+
+			await verifyErc20Balance(erc20, wallet1Address, price)
+			await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
+
+			await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
+			await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
+			await awaitOwnershipValueToBe(nftOwnership, cryptoPunks1.options.address, punkIndex, wallet2Address, 1)
+
+		} finally {
+			await transferPunkBackToInitialOwner()
+			await cancelRaribleBids()
+		}
+	}, 30000)
+
+	test("test buy using bid by crypto punk market", async () => {
+		await beforeTests()
+
+		try {
+			const price = 5
+
+			const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 			await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price })
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
+
 			const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
 			console.log(`cryptoPunkBid: ${JSON.stringify(cryptoPunkBid)}`)
 			expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
@@ -331,9 +557,7 @@ describe("crypto punks test", function () {
 			})
 
 			console.log(`bid: ${JSON.stringify(bid)}`)
-			checkCryptoPunkBid(bid, price)
-
-			const balanceBefore = await web32.eth.getBalance(wallet1Address)
+			checkBidWithEth(bid, price)
 
 			try {
 				await sdk1.order.fill({
@@ -346,7 +570,9 @@ describe("crypto punks test", function () {
 				throw new Error(`fill order (bid) failed with error: ${e}`)
 			}
 
-			await verifyEthBalance(web32, toAddress(wallet1Address), toBn(balanceBefore).plus(price).toString())
+			const balanceBefore1 = await web31.eth.getBalance(wallet1Address)
+			await cryptoPunks1.methods.withdraw().send({ from: wallet1Address })
+			await verifyEthBalance(web31, toAddress(wallet1Address), toBn(balanceBefore1).plus(price).toString())
 
 			await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
 			await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
@@ -382,6 +608,60 @@ describe("crypto punks test", function () {
 		console.log("transferred back")
 	}
 
+	async function cancelRaribleOrders() {
+		await retry(3, async () => {
+			const orders = (await sdk1.apis.order.getSellOrdersByItem({
+				contract: cryptoPunksAddress,
+				tokenId: punkIndex.toString(),
+				platform: Platform.ALL,
+			})).orders
+
+			console.log(`orders to cancel: ${orders.length}`)
+			if (orders.length === 0) {
+				return
+			}
+
+			await Promise.all(orders.map(async (order) => {
+				await sdk1.order.cancel(order)
+				console.log("order cancelled")
+			}))
+
+			const ordersAfterCancelling = (await sdk1.apis.order.getSellOrdersByItem({
+				contract: cryptoPunksAddress,
+				tokenId: punkIndex.toString(),
+				platform: Platform.ALL,
+			})).orders
+			expectEqual(ordersAfterCancelling.length, 0, "orders quantity from api after cancel")
+		})
+	}
+
+	async function cancelRaribleBids() {
+		await retry(3, async () => {
+			const bids = (await sdk2.apis.order.getOrderBidsByItem({
+				contract: cryptoPunksAddress,
+				tokenId: punkIndex.toString(),
+				platform: Platform.ALL,
+			})).orders
+
+			console.log(`bids to cancel: ${bids.length}`)
+			if (bids.length === 0) {
+				return
+			}
+
+			await Promise.all(bids.map(async (order) => {
+				await sdk2.order.cancel(order)
+				console.log("bid cancelled")
+			}))
+
+			const ordersAfterCancelling = (await sdk2.apis.order.getOrderBidsByItem({
+				contract: cryptoPunksAddress,
+				tokenId: punkIndex.toString(),
+				platform: Platform.ALL,
+			})).orders
+			expectEqual(ordersAfterCancelling.length, 0, "bids quantity from api after cancel")
+		})
+	}
+
 	async function getOrdersForPunkByType(type: String): Promise<RaribleV2Order[]> {
 		const orders = (await sdk1.apis.order.getSellOrdersByItem({
 			contract: cryptoPunksAddress,
@@ -406,7 +686,7 @@ describe("crypto punks test", function () {
 			.map(o => o as RaribleV2Order)
 	}
 
-	function checkCryptoPunkSellOrder(order: RaribleV2Order, price: number, taker: string | undefined = undefined) {
+	function checkSellOrderWithEth(order: RaribleV2Order, price: number, taker: string | undefined = undefined) {
 		expectEqual(order.make.assetType.assetClass, "CRYPTO_PUNKS", "type of order.make.asset")
 		expectEqual(order.make.value, "1", "order.make.value")
 		expectEqual(order.makeStock, "1", "order.makeStock")
@@ -417,7 +697,7 @@ describe("crypto punks test", function () {
 		expectEqual(order.take.valueDecimal, Math.pow(10, -18) * price, "order.take.valueDecimal")
 	}
 
-	function checkCryptoPunkBid(bid: RaribleV2Order, price: number, taker: string | undefined = undefined) {
+	function checkBidWithEth(bid: RaribleV2Order, price: number, taker: string | undefined = undefined) {
 		expectEqual(bid.make.assetType.assetClass, "ETH", "type of bid.make.asset")
 		expectEqual(bid.make.valueDecimal, Math.pow(10, -18) * price, "bid.make.value")
 		expectEqual(bid.maker, wallet2Address, "bid.maker")
