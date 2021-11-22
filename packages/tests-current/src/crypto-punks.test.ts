@@ -71,6 +71,10 @@ describe("crypto punks test", function () {
 		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance)
 
 		await cryptoPunks1.methods.withdraw().send({ from: wallet1Address })
+		await cryptoPunks2.methods.withdraw().send({ from: wallet2Address })
+		if (await cryptoPunks2.methods.punkBids(punkIndex) === wallet2Address) {
+			await cryptoPunks2.methods.withdrawBidForPunk(punkIndex).send({ from: wallet2Address })
+		}
 	}
 
 	test("check state before test", async () => {
@@ -410,53 +414,279 @@ describe("crypto punks test", function () {
 	}, 30000)
 
 	test("test cancel sell by crypto punk market", async () => {
-		await beforeTests()
+		try {
+			await beforeTests()
 
-		const minPrice = 8
-		await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({ from: wallet1Address })
-		const forSaleTrue = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
-		console.log(`forSale: ${JSON.stringify(forSaleTrue)}`)
-		expectEqual(forSaleTrue.isForSale, true, "cryptoPunk offer.isForSale")
+			const minPrice = 8
+			await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({ from: wallet1Address })
+			const forSaleTrue = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
+			console.log(`forSale: ${JSON.stringify(forSaleTrue)}`)
+			expectEqual(forSaleTrue.isForSale, true, "cryptoPunk offer.isForSale")
 
-		await retry(3, async () => {
-			const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
-			expect(cryptoPunkOrders.length).toBeGreaterThan(0)
-		})
+			await retry(3, async () => {
+				const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkOrders.length).toBeGreaterThan(0)
+			})
 
-		await cryptoPunks1.methods.punkNoLongerForSale(punkIndex).send({ from: wallet1Address })
+			await cryptoPunks1.methods.punkNoLongerForSale(punkIndex).send({ from: wallet1Address })
 
-		const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
-		console.log(`cancelled forSale: ${JSON.stringify(forSale)}`)
-		expectEqual(forSale.isForSale, false, "cryptoPunk cancelled offer.isForSale")
+			const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
+			console.log(`cancelled forSale: ${JSON.stringify(forSale)}`)
+			expectEqual(forSale.isForSale, false, "cryptoPunk cancelled offer.isForSale")
 
-		await retry(3, async () => {
-			const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
-			expectEqual(cryptoPunkOrders.length, 0, "crypto punk orders quantity from api")
-		})
+			await retry(3, async () => {
+				const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
+				expectEqual(cryptoPunkOrders.length, 0, "crypto punk orders quantity from api")
+			})
+		} finally {
+			await cancelRaribleOrders()
+		}
+	}, 30000)
+
+	test("test cancel sell by crypto punk market using api", async () => {
+		try {
+			await beforeTests()
+
+			const minPrice = 8
+			await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({ from: wallet1Address })
+			const forSaleTrue = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
+			console.log(`forSale: ${JSON.stringify(forSaleTrue)}`)
+			expectEqual(forSaleTrue.isForSale, true, "cryptoPunk offer.isForSale")
+
+			const order = await retry(3, async () => {
+				const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkOrders.length).toBeGreaterThan(0)
+				return cryptoPunkOrders[0]
+			})
+
+			try {
+				await sdk1.order.cancel(order)
+			} catch (e) {
+				console.log(`order.cancel failed with error: ${e}`)
+				throw new Error(`order.cancel failed with error: ${e}`)
+			}
+
+			const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
+			console.log(`cancelled forSale: ${JSON.stringify(forSale)}`)
+			expectEqual(forSale.isForSale, false, "cryptoPunk cancelled offer.isForSale")
+
+			await retry(3, async () => {
+				const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
+				expectEqual(cryptoPunkOrders.length, 0, "crypto punk orders quantity from api")
+			})
+		} finally {
+			await cancelRaribleOrders()
+		}
+	}, 30000)
+
+	test("test update sell by crypto punk market using api", async () => {
+		try {
+			await beforeTests()
+
+			const minPrice = 8
+			await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({ from: wallet1Address })
+			const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
+			console.log(`forSale: ${JSON.stringify(forSale)}`)
+			expectEqual(forSale.isForSale, true, "cryptoPunk offer.isForSale")
+			expectEqual(forSale.minValue, minPrice.toString(), "cryptoPunk offer.minValue")
+
+			const order = await retry(3, async () => {
+				const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkOrders.length).toBeGreaterThan(0)
+				return cryptoPunkOrders[0]
+			})
+
+			const newMinPrice = 10
+			try {
+				await sdk1.order.sellUpdate({
+					order,
+					price: newMinPrice,
+				})
+			} catch (e) {
+				console.log(`order.sellUpdate failed with error: ${e}`)
+				throw new Error(`order.sellUpdate failed with error: ${e}`)
+			}
+
+			const forSaleUpdated = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
+			console.log(`updated forSale: ${JSON.stringify(forSaleUpdated)}`)
+			expectEqual(forSaleUpdated.isForSale, true, "cryptoPunk updated offer.isForSale")
+			expectEqual(forSaleUpdated.minValue, newMinPrice.toString(), "cryptoPunk updated offer.minValue")
+
+			await retry(3, async () => {
+				const cryptoPunkOrders = await getOrdersForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkOrders.length).toBeGreaterThan(0)
+				const order = cryptoPunkOrders[0]
+				expectEqual(order.take.value, newMinPrice.toString(), "updated sell order: take.value")
+			})
+		} finally {
+			await cancelRaribleOrders()
+		}
 	}, 30000)
 
 	test("test cancel bid by crypto punk market", async () => {
-		await beforeTests()
+		try {
+			await beforeTests()
 
-		const price = 8
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price  })
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+			const price = 8
 
-		await retry(3, async () => {
-			const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
-			expect(cryptoPunkBids.length).toBeGreaterThan(0)
-		})
+			const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 
-		await cryptoPunks2.methods.withdrawBidForPunk(punkIndex).send({ from: wallet2Address })
+			await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price })
+			const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
-		const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
+			await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkBids.length).toBeGreaterThan(0)
+			})
 
-		await retry(3, async () => {
-			const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
-			expectEqual(cryptoPunkBids.length, 0, "crypto punk bids quantity from api")
-		})
+			await cryptoPunks2.methods.withdrawBidForPunk(punkIndex).send({ from: wallet2Address })
+
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
+
+			const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
+
+			await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expectEqual(cryptoPunkBids.length, 0, "crypto punk bids quantity from api")
+			})
+		} finally {
+			await cancelRaribleBids()
+		}
+	}, 30000)
+
+	test("test cancel bid by crypto punk market using api", async () => {
+		try {
+			await beforeTests()
+
+			const price = 8
+
+			const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
+
+			await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price })
+			const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
+
+			const bid = await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkBids.length).toBeGreaterThan(0)
+				return cryptoPunkBids[0]
+			})
+
+			try {
+				await sdk2.order.cancel(bid)
+			} catch (e) {
+				console.log(`order.cancel failed with error: ${e}`)
+				throw new Error(`order.cancel failed with error: ${e}`)
+			}
+
+			const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
+
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
+
+			await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expectEqual(cryptoPunkBids.length, 0, "crypto punk bids quantity from api")
+			})
+		} finally {
+			await cancelRaribleBids()
+		}
+	}, 30000)
+
+	test("test update bid by crypto punk market", async () => {
+		try {
+			await beforeTests()
+
+			const price = 8
+
+			const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
+
+			await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price })
+			const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+			expectEqual(cryptoPunkBid.value, price.toString(), "cryptoPunkBid.value")
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
+
+			await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkBids.length).toBeGreaterThan(0)
+				const bid = cryptoPunkBids[0]
+				expectEqual(bid.make.value, price.toString(), "updated bid: make.value")
+			})
+
+			const newPrice = 10//todo check на понижение
+
+			await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: newPrice })
+
+			const cryptoPunkBidUpdated = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkBidUpdated.hasBid, true, "cryptoPunkBid updated .hasBid")
+			expectEqual(cryptoPunkBidUpdated.value, newPrice.toString(), "cryptoPunkBid updated .value")
+
+			await cryptoPunks2.methods.withdraw().send({ from: wallet2Address })
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
+
+			await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkBids.length).toBeGreaterThan(0)
+				const bid = cryptoPunkBids[0]
+				expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
+			})
+		} finally {
+			await cancelRaribleBids()
+		}
+	}, 30000)
+
+	test("test update bid by crypto punk market using api", async () => {
+		try {
+			await beforeTests()
+
+			const price = 8
+
+			const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
+
+			await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: price })
+			const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+			expectEqual(cryptoPunkBid.value, price.toString(), "cryptoPunkBid.value")
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
+
+			const bid = await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkBids.length).toBeGreaterThan(0)
+				return cryptoPunkBids[0]
+			})
+
+			const newPrice = 10//todo check на понижение
+			try {
+				await sdk2.order.bidUpdate({
+					order: bid,
+					price: newPrice,
+				})
+			} catch (e) {
+				console.log(`order.bidUpdate failed with error: ${e}`)
+				throw new Error(`order.bidUpdate failed with error: ${e}`)
+			}
+
+			const cryptoPunkBidUpdated = await cryptoPunks2.methods.punkBids(punkIndex).call()
+			expectEqual(cryptoPunkBidUpdated.hasBid, true, "cryptoPunkBid updated .hasBid")
+			expectEqual(cryptoPunkBidUpdated.value, newPrice.toString(), "cryptoPunkBid updated .value")
+
+			await cryptoPunks2.methods.withdraw().send({ from: wallet2Address })
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
+
+			await retry(3, async () => {
+				const cryptoPunkBids = await getBidsForPunkByType("CRYPTO_PUNK")
+				expect(cryptoPunkBids.length).toBeGreaterThan(0)
+				const bid = cryptoPunkBids[0]
+				expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
+			})
+		} finally {
+			await cancelRaribleBids()
+		}
 	}, 30000)
 
 	test("test buy using rarible order bid with erc20", async () => {
