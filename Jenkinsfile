@@ -1,5 +1,3 @@
-def testSuccess = false
-
 pipeline {
   agent none
   options {
