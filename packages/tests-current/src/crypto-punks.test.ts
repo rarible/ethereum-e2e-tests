@@ -61,6 +61,7 @@ describe("crypto punks test", function () {
 		erc20Address = erc20.options.address
 
 		await erc20Mint(erc20, wallet1Address, wallet2Address, initErc20Balance)
+		await transferPunkBackToInitialOwner()
 	}
 
 	async function beforeTests() {
