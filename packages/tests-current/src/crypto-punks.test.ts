@@ -900,13 +900,19 @@ describe("crypto punks test", function () {
 			const forSaleUpdated = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
 			console.log(`updated forSale: ${JSON.stringify(forSaleUpdated)}`)
 			expectEqual(forSaleUpdated.isForSale, true, "cryptoPunk updated offer.isForSale")
-			expectEqual(forSaleUpdated.minValue, newMinPrice.toString(), "cryptoPunk updated offer.minValue")
+			expectEqual(forSaleUpdated.minValue, "0", "cryptoPunk updated offer.minValue")
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
-				expectEqual(orders.length, 1, "punk orders quantity")
+				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				expectEqual(orders.length, 1, "rarible orders quantity after update")
 				const order = orders[0]
 				expectEqual(order.take.value, newMinPrice.toString(), "updated sell order: take.value")
+			})
+
+			//todo ошибка: предыдущего панк-ордера не должно быть
+			await retry(3, async () => {
+				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				expectEqual(orders.length, 0, "punk orders quantity after update")
 			})
 
 		} finally {
@@ -1094,7 +1100,7 @@ describe("crypto punks test", function () {
 				return bids[0]
 			})
 
-			const newPrice = 10//todo check на понижение
+			const newPrice = 10
 			try {
 				await sdk2.order.bidUpdate({
 					order: bid,
@@ -1106,17 +1112,23 @@ describe("crypto punks test", function () {
 			}
 
 			const cryptoPunkBidUpdated = await cryptoPunks2.methods.punkBids(punkIndex).call()
-			expectEqual(cryptoPunkBidUpdated.hasBid, true, "cryptoPunkBid updated .hasBid")
-			expectEqual(cryptoPunkBidUpdated.value, newPrice.toString(), "cryptoPunkBid updated .value")
+			expectEqual(cryptoPunkBidUpdated.hasBid, true, "cryptoPunkBid hasBid after update")
+			expectEqual(cryptoPunkBidUpdated.value, price.toString(), "cryptoPunkBid value after update")
 
 			await cryptoPunks2.methods.withdraw().send({ from: wallet2Address })
-			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
+			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
+
+			await retry(3, async () => {
+				const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				expectEqual(bids.length, 1, "rarible bids quantity after update")
+				const bid = bids[0]
+				expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
+			})
 
 			await retry(3, async () => {
 				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
-				expectEqual(bids.length, 1, "punk bids quantity")
-				const bid = bids[0]
-				expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
+				expectEqual(bids.length, 1, "punk bids quantity after update")
+				expectEqual(bid.make.value, price.toString(), "punk bid: make.value after update")
 			})
 
 		} finally {
