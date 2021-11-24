@@ -1751,10 +1751,10 @@
     ganache-core "^2.13.2"
     web3-provider-engine "^16.0.1"
 
-"@rarible/protocol-ethereum-sdk@~0.12.4":
-  version "0.12.4"
-  resolved "https://registry.yarnpkg.com/@rarible/protocol-ethereum-sdk/-/protocol-ethereum-sdk-0.12.4.tgz#46c2e6b56507c3ca25d6c74a0029de34572f7f5e"
-  integrity sha512-HIKCT5BFKJF7lD1fBRBD0N+sV6qFXg4AckAjSe/cKo84WWaeLzWyeLNPpNlgYXzvEtnS+u9risLHsQozCyiq4g==
+"@rarible/protocol-ethereum-sdk@~0.12.6":
+  version "0.12.6"
+  resolved "https://registry.yarnpkg.com/@rarible/protocol-ethereum-sdk/-/protocol-ethereum-sdk-0.12.6.tgz#3b20fed252bfa8ffbf87614420429f1d985c109f"
+  integrity sha512-J4ZcmhfVZTofSInUhjVLG5qgc5JnIGmQclZ774uPLMY53KQPvcsCLo2zlmz0uCxQsxtji74EsDpuD40yHDAbXg==
   dependencies:
     "@ethereumjs/common" "^2.4.0"
     "@ethereumjs/tx" "^3.3.0"
@@ -1770,6 +1770,17 @@
   version "0.5.0"
   resolved "https://registry.yarnpkg.com/@rarible/test-provider/-/test-provider-0.5.0.tgz#c0abda6fd6f92d0eac37a37f307830f88c113264"
   integrity sha512-d8chlYztOVsd19PUD0TUlJywh1497DtSdbq079Sbkm6nNtjzUuuNZDtAUiH/TMZsYG1yFwN+i/aC+AeWMZLuTw==
+  dependencies:
+    "@ethereumjs/common" "^2.4.0"
+    "@ethereumjs/tx" "^3.3.0"
+    eth-sig-util "^3.0.1"
+    ethereumjs-util "^7.1.0"
+    ethereumjs-wallet "^1.0.1"
+
+"@rarible/test-provider@~0.5.4":
+  version "0.5.4"
+  resolved "https://registry.yarnpkg.com/@rarible/test-provider/-/test-provider-0.5.4.tgz#39122851d11e8092ce85a3ea88d64bd4df416c35"
+  integrity sha512-bp5J0jSHBwz+aOPW8ycM9rIO42f+0MnnUlNxMsl/8LfBvWmDqWp/4XXDf8hLowFw1JurSH7M4kzP9B+vqVlanA==
   dependencies:
     "@ethereumjs/common" "^2.4.0"
     "@ethereumjs/tx" "^3.3.0"

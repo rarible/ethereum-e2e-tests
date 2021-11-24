@@ -6,7 +6,7 @@ import { expectEqual } from "./expect-equal"
 export async function awaitOwnershipValueToBe(
 	api: NftOwnershipControllerApi,
 	token: string,
-	tokenId: Number,
+	tokenId: number,
 	owner: string,
 	value: string | number
 ) {

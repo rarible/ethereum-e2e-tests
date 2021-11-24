@@ -1,3 +1,3 @@
-export function getOwnershipId(contract: String, tokenId: Number, owner: String): string {
+export function getOwnershipId(contract: string, tokenId: number, owner: string): string {
 	return `${contract}:${tokenId}:${owner}`
 }
