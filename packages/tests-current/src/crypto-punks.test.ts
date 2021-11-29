@@ -1681,7 +1681,7 @@ describe("crypto punks test", function () {
 				platform: Platform.ALL,
 			})).orders
 
-			console.log(`bids to cancel: ${bids.length}`)
+			console.log(`bids to cancel: ${bids.length}: ${JSON.stringify(bids)}`)
 			if (bids.length === 0) {
 				return
 			}
