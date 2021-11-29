@@ -1751,10 +1751,10 @@
     ganache-core "^2.13.2"
     web3-provider-engine "^16.0.1"
 
-"@rarible/protocol-ethereum-sdk@~0.12.6":
-  version "0.12.6"
-  resolved "https://registry.yarnpkg.com/@rarible/protocol-ethereum-sdk/-/protocol-ethereum-sdk-0.12.6.tgz#3b20fed252bfa8ffbf87614420429f1d985c109f"
-  integrity sha512-J4ZcmhfVZTofSInUhjVLG5qgc5JnIGmQclZ774uPLMY53KQPvcsCLo2zlmz0uCxQsxtji74EsDpuD40yHDAbXg==
+"@rarible/protocol-ethereum-sdk@~0.12.9":
+  version "0.12.9"
+  resolved "https://registry.yarnpkg.com/@rarible/protocol-ethereum-sdk/-/protocol-ethereum-sdk-0.12.9.tgz#80a5ce236cb4ad0c2c2d3c66d281a024f959f1fc"
+  integrity sha512-itPa+NYdk/DYLi0H30bfHf6dl20MOUPGAdMKpMCU7VFaCGeSVEOZAgMdyj6H3BSTNQ01wODSNGCmfc15YOwOHQ==
   dependencies:
     "@ethereumjs/common" "^2.4.0"
     "@ethereumjs/tx" "^3.3.0"
