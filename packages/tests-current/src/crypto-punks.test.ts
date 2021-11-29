@@ -4,6 +4,7 @@ import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { Contract } from "web3-eth-contract"
 import { Asset, OrderStatus, Platform, RaribleV2Order } from "@rarible/ethereum-api-client"
 import { CryptoPunksAssetType, Erc20AssetType } from "@rarible/ethereum-api-client/build/models"
+import { CryptoPunkOrder, Order} from "@rarible/ethereum-api-client/build/models/Order"
 import { awaitOwnershipValueToBe } from "./common/await-ownership-value-to-be"
 import { awaitNoOwnership } from "./common/await-no-ownership"
 import { initProviders } from "./common/init-providers"
@@ -234,7 +235,7 @@ describe("crypto punks test", function () {
 					throw new Error(`order.bid failed with error: ${e}`)
 				}
 				await retry(3, async () => {
-					const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const bids = await getRariblePunkBids()
 					expectEqual(bids.length, 1, "rarible bids quantity")
 				})
 			}
@@ -244,7 +245,7 @@ describe("crypto punks test", function () {
 				await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: bidPrice })
 				await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(bidPrice).toString())
 				await retry(3, async () => {
-					const cryptoPunkBids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const cryptoPunkBids = await getPunkMarketBids()
 					expectEqual(cryptoPunkBids.length, 1, "punk bids before buying")
 				})
 			}
@@ -273,7 +274,7 @@ describe("crypto punks test", function () {
 			checkSellOrderWithEth(createdOrder, price)
 
 			let order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 1, "rarible orders quantity")
 				return orders[0]
 			})
@@ -296,14 +297,14 @@ describe("crypto punks test", function () {
 			}
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 0, "rarible orders quantity after sale")
 			})
 
 			if (withExistingRaribleBid) {
 				// there is an active bid of wallet2 - of current owner of punk. it's ok
 				await retry(3, async () => {
-					const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const bids = await getRariblePunkBids()
 					expectEqual(bids.length, 1, "rarible bids quantity after buying")
 				})
 			}
@@ -312,12 +313,12 @@ describe("crypto punks test", function () {
 				// bid is deleted (it was deleted by punk market)
 				await cryptoPunks2.methods.withdraw().send({ from: wallet2Address })
 				await retry(3, async () => {
-					const cryptoPunkBids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const cryptoPunkBids = await getPunkMarketBids()
 					expectEqual(cryptoPunkBids.length, 0, "punk bids after buying")
 				})
 
 				await retry(3, async () => {
-					const cryptoPunkBids = await getInactiveBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const cryptoPunkBids = await getInactivePunkMarketBids()
 					expectEqual(cryptoPunkBids.length, 0, "inactive punk bids after buying")
 				})
 			}
@@ -376,7 +377,7 @@ describe("crypto punks test", function () {
 			expectEqual((createdOrder.take.assetType as Erc20AssetType).contract.toLowerCase(), erc20Address.toLowerCase(), "contract of order.take.asset")
 
 			let order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 1, "rarible orders quantity")
 				return orders[0]
 			})
@@ -456,7 +457,7 @@ describe("crypto punks test", function () {
 					throw new Error(`order.bid failed with error: ${e}`)
 				}
 				await retry(3, async () => {
-					const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const bids = await getRariblePunkBids()
 					expectEqual(bids.length, 1, "rarible bids quantity")
 				})
 			}
@@ -466,7 +467,7 @@ describe("crypto punks test", function () {
 				await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({ from: wallet2Address, value: bidPrice })
 				await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(bidPrice).toString())
 				await retry(3, async () => {
-					const cryptoPunkBids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const cryptoPunkBids = await getPunkMarketBids()
 					expectEqual(cryptoPunkBids.length, 1, "punk bids before buying")
 				})
 			}
@@ -480,7 +481,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSale.punkIndex, punkIndex.toString(), "cryptoPunk offer.punkIndex")
 
 			let order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk order before sale")
 				return orders[0]
 			})
@@ -499,14 +500,14 @@ describe("crypto punks test", function () {
 			}
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 0, "punk order after sale")
 			})
 
 			if (withExistingRaribleBid) {
 				// there is an active bid of wallet2 - of current owner of punk. it's ok
 				await retry(3, async () => {
-					const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const bids = await getRariblePunkBids()
 					expectEqual(bids.length, 1, "rarible bids quantity after buying")
 				})
 			}
@@ -515,12 +516,12 @@ describe("crypto punks test", function () {
 				// bid is deleted (it was deleted by punk market)
 				await cryptoPunks2.methods.withdraw().send({ from: wallet2Address })
 				await retry(3, async () => {
-					const cryptoPunkBids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const cryptoPunkBids = await getPunkMarketBids()
 					expectEqual(cryptoPunkBids.length, 0, "punk bids after buying")
 				})
 
 				await retry(3, async () => {
-					const cryptoPunkBids = await getInactiveBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const cryptoPunkBids = await getInactivePunkMarketBids()
 					expectEqual(cryptoPunkBids.length, 0, "inactive punk bids after buying")
 				})
 			}
@@ -551,7 +552,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSale.onlySellTo.toLowerCase(), wallet2Address, "cryptoPunk offer.onlySellTo")
 
 			const order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk orders quantity")
 				return orders[0]
 			})
@@ -612,7 +613,7 @@ describe("crypto punks test", function () {
 			checkSellOrderWithEth(createdOrder, price)
 
 			let order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 1, "rarible orders quantity")
 				return orders[0]
 			})
@@ -630,7 +631,7 @@ describe("crypto punks test", function () {
 
 			// expected: 1 punk order, no one rarible order
 			let punkOrder = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk orders quantity")
 				return orders[0]
 			})
@@ -642,7 +643,7 @@ describe("crypto punks test", function () {
 			// rarible order must be deleted, because there is no Offer(price: 0, onlySellTo: proxy) anymore
 			// whereas rarible order needs such offer for executing
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 0, "rarible orders quantity after creating punk order")
 			})
 
@@ -651,7 +652,7 @@ describe("crypto punks test", function () {
 			// // (так как для его выполнения должен быть ордер в панко-контракте с onlySellTo=proxy и др. полями,
 			// // а мы этот ордер перетерли нативным панко-ордером)
 			// const raribleOrder = await retry(3, async () => {
-			// 	const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+			// 	const orders = await getRariblePunkOrders()
 			// 	expect(orders.length).toBeGreaterThan(0)
 			// 	return orders[0]
 			// })
@@ -685,7 +686,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSale.onlySellTo, ZERO_ADDRESS, "cryptoPunk offer.onlySellTo")
 
 			let punkOrder = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk orders quantity")
 				return orders[0]
 			})
@@ -720,7 +721,7 @@ describe("crypto punks test", function () {
 
 			// expected: 1 rarible order, no one punk order
 			let order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 1, "rarible orders quantity")
 				return orders[0]
 			})
@@ -735,14 +736,14 @@ describe("crypto punks test", function () {
 			// punk order must be deleted, because there is Offer(price: 0, onlySellTo: proxy) for proxy
 			// thus punk order isn't executable anymore
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 0, "punk orders quantity after rarible order is created")
 			})
 
 			// // punk должен был быть удален
 			// // это подтверждение, что он нерабочий
 			// const cryptoPunkOrder = await retry(3, async () => {
-			// 	const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+			// 	const orders = await getPunkMarketOrders()
 			// 	expect(orders.length).toBeGreaterThan(0)
 			// 	return orders[0]
 			// })
@@ -788,7 +789,7 @@ describe("crypto punks test", function () {
 		}
 
 		let order = await retry(3, async () => {
-			const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+			const orders = await getRariblePunkOrders()
 			expectEqual(orders.length, 1, "orders quantity from api before cancel")
 			return orders[0]
 		})
@@ -796,7 +797,7 @@ describe("crypto punks test", function () {
 		await sdk1.order.cancel(order)
 
 		await retry(3, async () => {
-			const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+			const orders = await getRariblePunkOrders()
 			expectEqual(orders.length, 0, "orders quantity from api after cancel")
 		})
 	}, 30000)
@@ -812,7 +813,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSaleTrue.isForSale, true, "cryptoPunk offer.isForSale")
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk orders quantity")
 			})
 
@@ -823,7 +824,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSale.isForSale, false, "cryptoPunk cancelled offer.isForSale")
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 0, "punk orders quantity from api")
 			})
 
@@ -843,7 +844,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSaleTrue.isForSale, true, "cryptoPunk offer.isForSale")
 
 			const order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk orders quantity")
 				return orders[0]
 			})
@@ -860,7 +861,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSale.isForSale, false, "cryptoPunk cancelled offer.isForSale")
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 0, "punk orders quantity from api")
 			})
 
@@ -881,7 +882,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSale.minValue, minPrice.toString(), "cryptoPunk offer.minValue")
 
 			const order = await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk orders quantity")
 				return orders[0]
 			})
@@ -903,7 +904,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSaleUpdated.minValue, "0", "cryptoPunk updated offer.minValue")
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 1, "rarible orders quantity after update")
 				const order = orders[0]
 				expectEqual(order.take.value, newMinPrice.toString(), "updated sell order: take.value")
@@ -911,7 +912,7 @@ describe("crypto punks test", function () {
 
 			//todo ошибка: предыдущего панк-ордера не должно быть
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 0, "punk orders quantity after update")
 			})
 
@@ -929,7 +930,7 @@ describe("crypto punks test", function () {
 			expectEqual(forSale.isForSale, true, "cryptoPunk offer.isForSale")
 
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 1, "punk orders quantity")
 			})
 
@@ -946,11 +947,11 @@ describe("crypto punks test", function () {
 
 			// punk order is deleted
 			await retry(3, async () => {
-				const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getPunkMarketOrders()
 				expectEqual(orders.length, 0, "punk orders quantity after transfer")
 			})
 			await retry(3, async () => {
-				const orders = await getInactiveOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const orders = await getInactivePunkMarketOrders()
 				expectEqual(orders.length, 0, "inactive punk orders quantity after transfer")
 			})
 
@@ -974,7 +975,7 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity")
 			})
 
@@ -986,7 +987,7 @@ describe("crypto punks test", function () {
 			expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 0, "punk bids quantity from api")
 			})
 
@@ -1009,7 +1010,7 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 			const bid = await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity")
 				return bids[0]
 			})
@@ -1027,7 +1028,7 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
 
 			await retry(3, async () => {
-				const cryptoPunkBids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const cryptoPunkBids = await getPunkMarketBids()
 				expectEqual(cryptoPunkBids.length, 0, "punk bids quantity from api")
 			})
 
@@ -1051,7 +1052,7 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity")
 				const bid = bids[0]
 				expectEqual(bid.make.value, price.toString(), "updated bid: make.value")
@@ -1069,7 +1070,7 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity after update")
 				const bid = bids[0]
 				expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
@@ -1095,7 +1096,7 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 			const bid = await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity")
 				return bids[0]
 			})
@@ -1119,14 +1120,14 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const bids = await getRariblePunkBids()
 				expectEqual(bids.length, 1, "rarible bids quantity after update")
 				const bid = bids[0]
 				expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
 			})
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity after update")
 				expectEqual(bid.make.value, price.toString(), "punk bid: make.value after update")
 			})
@@ -1148,7 +1149,7 @@ describe("crypto punks test", function () {
 			expectEqual(cryptoPunkBid.value, price.toString(), "cryptoPunkBid.value")
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity")
 			})
 
@@ -1164,11 +1165,11 @@ describe("crypto punks test", function () {
 			//  только один из них реализуем - у которотого есть соответствие в контракте, остальные д б удалены/отменены
 			// previous punk bid is deleted, because it was replaced in punk contract by new punk bid
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity after new bid")
 			})
 			await retry(3, async () => {
-				const bids = await getInactiveOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getInactivePunkMarketOrders()
 				expectEqual(bids.length, 0, "inactive punk bids quantity after new bid")
 			})
 		} finally {
@@ -1191,7 +1192,7 @@ describe("crypto punks test", function () {
 			await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity")
 			})
 
@@ -1211,7 +1212,7 @@ describe("crypto punks test", function () {
 			//  чинится только созданием заново панк-бида и потом уже отменой (cancelBrokenPunkBid)
 			// punk bid is deleted
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 0, "punk bids quantity after transfer")
 			})
 
@@ -1251,12 +1252,12 @@ describe("crypto punks test", function () {
 			}
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const bids = await getPunkMarketBids()
 				expectEqual(bids.length, 1, "punk bids quantity")
 			})
 
 			await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const bids = await getRariblePunkBids()
 				expectEqual(bids.length, 1, "rarible bids quantity")
 			})
 
@@ -1309,7 +1310,7 @@ describe("crypto punks test", function () {
 				}
 
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getRariblePunkOrders()
 					expectEqual(orders.length, 1, "rarible order before bid")
 				})
 			}
@@ -1318,7 +1319,7 @@ describe("crypto punks test", function () {
 				const minPrice = 28
 				await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({ from: wallet1Address })
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getPunkMarketOrders()
 					expectEqual(orders.length, 1, "punk order before bid")
 				})
 			}
@@ -1361,7 +1362,7 @@ describe("crypto punks test", function () {
 			expectEqual(createdBid.take.value, "1", "bid.take.value")
 
 			let bid = await retry(3, async () => {
-				const bids = await getBidsForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				const bids = await getRariblePunkBids()
 				expectEqual(bids.length, 1, "rarible bids quantity")
 				return bids[0]
 			})
@@ -1389,26 +1390,26 @@ describe("crypto punks test", function () {
 
 			if (withExistingRaribleOrder) {
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getRariblePunkOrders()
 					expectEqual(orders.length, 0, "rarible order after accepting bid")
 				})
 				// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 				// ордера он опять активный, хотя нереализуем
 				// (т к при accept bid идет transfer и записывается Offer(isForSale=false))
 				await retry(3, async () => {
-					const orders = await getInactiveOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getInactiveRaribleOrders()
 					expectEqual(orders.length, 0, "inactive rarible order after accepting bid")
 				})
 				// transfer punk back and check that there is still no rarible order
 				await transferPunkBackToInitialOwner()
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getRariblePunkOrders()
 					expectEqual(orders.length, 0, "rarible orders quantity after accepting bid")
 				})
 
 				// // это подтверждение, что ордер нереализуем (панк д б у wallet1)
 				// const order = await retry(3, async () => {
-				// 	const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				// 	const orders = await getRariblePunkOrders()
 				// 	expectEqual(orders.length, 1, "rarible order after accepting bid")
 				// 	return orders[0]
 				// })
@@ -1426,14 +1427,14 @@ describe("crypto punks test", function () {
 
 			if (withExistingPunkOrder) {
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getPunkMarketOrders()
 					expectEqual(orders.length, 0, "punk order after accepting bid")
 				})
 				// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 				// ордера он опять активный, хотя нереализуем
 				// (т к при accept bid идет transfer и записывается Offer(isForSale=false))
 				await retry(3, async () => {
-					const orders = await getInactiveOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getInactivePunkMarketOrders()
 					expectEqual(orders.length, 0, "inactive punk order after accepting bid")
 				})
 				// transfer punk back and check that there is still no punk order
@@ -1441,7 +1442,7 @@ describe("crypto punks test", function () {
 				// todo тут тоже ошибка. он inactive, значит при получении панка назад ордер д б active,
 				//  но он все равно inactive
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getPunkMarketOrders()
 					expectEqual(orders.length, 1, "punk orders quantity after transferring back")
 				})
 			}
@@ -1497,7 +1498,7 @@ describe("crypto punks test", function () {
 				}
 
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getRariblePunkOrders()
 					expectEqual(orders.length, 1, "rarible order before bid")
 				})
 			}
@@ -1506,7 +1507,7 @@ describe("crypto punks test", function () {
 				const minPrice = 28
 				await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({ from: wallet1Address })
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getPunkMarketOrders()
 					expectEqual(orders.length, 1, "punk order before bid")
 				})
 			}
@@ -1525,7 +1526,7 @@ describe("crypto punks test", function () {
 			expectEqual(cryptoPunkBid.punkIndex, punkIndex.toString(), "cryptoPunkBid.punkIndex")
 
 			const bid = await retry(3, async () => {
-				const cryptoPunkBids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const cryptoPunkBids = await getPunkMarketBids()
 				expectEqual(cryptoPunkBids.length, 1, "punk bid before accepting")
 				return cryptoPunkBids[0]
 			})
@@ -1545,7 +1546,7 @@ describe("crypto punks test", function () {
 			}
 
 			await retry(3, async () => {
-				const cryptoPunkBids = await getBidsForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+				const cryptoPunkBids = await getPunkMarketBids()
 				expectEqual(cryptoPunkBids.length, 0, "punk bids quantity after accepting")
 			})
 
@@ -1559,25 +1560,25 @@ describe("crypto punks test", function () {
 
 			if (withExistingRaribleOrder) {
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getRariblePunkOrders()
 					expectEqual(orders.length, 0, "rarible order after accepting bid")
 				})
 				// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 				// ордера он опять активный, хотя нереализуем (т к при accept bid записывается Offer(isForSale=false)
 				await retry(3, async () => {
-					const orders = await getInactiveOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getInactiveRaribleOrders()
 					expectEqual(orders.length, 0, "inactive rarible order after accepting bid")
 				})
 				// transfer punk back and check that there is still no rarible order
 				await transferPunkBackToInitialOwner()
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+					const orders = await getRariblePunkOrders()
 					expectEqual(orders.length, 0, "rarible orders quantity after accepting bid")
 				})
 
 				// // это подтверждение, что ордер нереализуем
 				// const order = await retry(3, async () => {
-				// 	const orders = await getOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+				// 	const orders = await getRariblePunkOrders()
 				// 	expectEqual(orders.length, 1, "rarible order after accepting bid")
 				// 	return orders[0]
 				// })
@@ -1595,13 +1596,13 @@ describe("crypto punks test", function () {
 
 			if (withExistingPunkOrder) {
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getPunkMarketOrders()
 					expectEqual(orders.length, 0, "punk order after accepting bid")
 				})
 				// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 				// ордера он опять активный, хотя нереализуем (т к при accept bid записывается Offer(isForSale=false)
 				await retry(3, async () => {
-					const orders = await getInactiveOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getInactivePunkMarketOrders()
 					expectEqual(orders.length, 0, "inactive punk order after accepting bid")
 				})
 				// transfer punk back and check that there is still no punk order
@@ -1609,7 +1610,7 @@ describe("crypto punks test", function () {
 				// todo тут тоже ошибка. он inactive, значит при получении панка назад ордер д б active,
 				//  но он все равно inactive
 				await retry(3, async () => {
-					const orders = await getOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+					const orders = await getPunkMarketOrders()
 					expectEqual(orders.length, 1, "punk orders quantity after transferring back")
 				})
 			}
@@ -1700,7 +1701,13 @@ describe("crypto punks test", function () {
 		})
 	}
 
-	async function getOrdersForPunkByType(type: String): Promise<RaribleV2Order[]> {
+	async function getRariblePunkOrders(): Promise<RaribleV2Order[]> {
+		return getOrdersForPunkByType<RaribleV2Order>(ORDER_TYPE_RARIBLE_V2)
+	}
+	async function getPunkMarketOrders(): Promise<CryptoPunkOrder[]> {
+		return getOrdersForPunkByType<CryptoPunkOrder>(ORDER_TYPE_CRYPTO_PUNK)
+	}
+	async function getOrdersForPunkByType<T extends Order>(type: String): Promise<T[]> {
 		const orders = (await sdk1.apis.order.getSellOrdersByItem({
 			contract: cryptoPunksAddress,
 			tokenId: punkIndex.toString(),
@@ -1709,10 +1716,16 @@ describe("crypto punks test", function () {
 		console.log(`orders[${orders.length}]: ${JSON.stringify(orders)}`)
 		return orders
 			.filter(a => a["type"] === type)
-			.map(o => o as RaribleV2Order)
+			.map(o => o as T)
 	}
 
-	async function getInactiveOrdersForPunkByType(type: String): Promise<RaribleV2Order[]> {
+	async function getInactiveRaribleOrders(): Promise<RaribleV2Order[]> {
+		return getInactiveOrdersForPunkByType(ORDER_TYPE_RARIBLE_V2)
+	}
+	async function getInactivePunkMarketOrders(): Promise<CryptoPunkOrder[]> {
+		return getInactiveOrdersForPunkByType(ORDER_TYPE_CRYPTO_PUNK)
+	}
+	async function getInactiveOrdersForPunkByType<T extends Order>(type: String): Promise<T[]> {
 		const orders = (await sdk1.apis.order.getSellOrdersByMakerAndByStatus({
 			maker: wallet1Address,
 			platform: Platform.ALL,
@@ -1720,10 +1733,16 @@ describe("crypto punks test", function () {
 		})).orders
 		return orders
 			.filter(a => a["type"] === type && ((a["make"]as Asset)["assetType"] as CryptoPunksAssetType)["tokenId"] === punkIndex)
-			.map(o => o as RaribleV2Order)
+			.map(o => o as T)
 	}
 
-	async function getBidsForPunkByType(type: String): Promise<RaribleV2Order[]> {
+	async function getRariblePunkBids(): Promise<RaribleV2Order[]> {
+		return getBidsForPunkByType<RaribleV2Order>(ORDER_TYPE_RARIBLE_V2)
+	}
+	async function getPunkMarketBids(): Promise<CryptoPunkOrder[]> {
+		return getBidsForPunkByType<CryptoPunkOrder>(ORDER_TYPE_CRYPTO_PUNK)
+	}
+	async function getBidsForPunkByType<T extends Order>(type: String): Promise<T[]> {
 		const bids = (await sdk1.apis.order.getOrderBidsByItem({
 			contract: cryptoPunksAddress,
 			tokenId: punkIndex.toString(),
@@ -1732,10 +1751,13 @@ describe("crypto punks test", function () {
 		console.log(`bids[${bids.length}]: ${JSON.stringify(bids)}`)
 		return bids
 			.filter(a => a["type"] === type)
-			.map(o => o as RaribleV2Order)
+			.map(o => o as T)
 	}
 
-	async function getInactiveBidsForPunkByType(type: String): Promise<RaribleV2Order[]> {
+	async function getInactivePunkMarketBids(): Promise<CryptoPunkOrder[]> {
+		return getInactiveBidsForPunkByType<CryptoPunkOrder>(ORDER_TYPE_CRYPTO_PUNK)
+	}
+	async function getInactiveBidsForPunkByType<T extends Order>(type: String): Promise<T[]> {
 		const orders = (await sdk2.apis.order.getOrderBidsByMakerAndByStatus({
 			maker: wallet2Address,
 			platform: Platform.ALL,
@@ -1743,10 +1765,14 @@ describe("crypto punks test", function () {
 		})).orders
 		return orders
 			.filter(a => a["type"] === type && ((a["take"]as Asset)["assetType"] as CryptoPunksAssetType)["tokenId"] === punkIndex)
-			.map(o => o as RaribleV2Order)
+			.map(o => o as T)
 	}
 
-	function checkSellOrderWithEth(order: RaribleV2Order, price: number, taker: string | undefined = undefined) {
+	function checkSellOrderWithEth(
+		order: RaribleV2Order | CryptoPunkOrder,
+		price: number,
+		taker: string | undefined = undefined
+	) {
 		expectEqual(order.make.assetType.assetClass, ASSET_CLASS_CRYPTO_PUNKS, "type of order.make.asset")
 		expectEqual(order.make.value, "1", "order.make.value")
 		expectEqual(order.makeStock, "1", "order.makeStock")
@@ -1757,7 +1783,11 @@ describe("crypto punks test", function () {
 		expectEqual(order.take.valueDecimal, Math.pow(10, -18) * price, "order.take.valueDecimal")
 	}
 
-	function checkBidWithEth(bid: RaribleV2Order, price: number, taker: string | undefined = undefined) {
+	function checkBidWithEth(
+		bid: RaribleV2Order | CryptoPunkOrder,
+		price: number,
+		taker: string | undefined = undefined
+	) {
 		expectEqual(bid.make.assetType.assetClass, ASSET_CLASS_ETH, "type of bid.make.asset")
 		expectEqual(bid.make.valueDecimal, Math.pow(10, -18) * price, "bid.make.value")
 		expectEqual(bid.maker, wallet2Address, "bid.maker")
