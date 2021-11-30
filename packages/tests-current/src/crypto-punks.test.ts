@@ -2,7 +2,7 @@ import { createRaribleSdk, RaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { Contract } from "web3-eth-contract"
-import { Asset, OrderStatus, Platform, RaribleV2Order } from "@rarible/ethereum-api-client"
+import {Asset, EthAssetType, OrderStatus, Platform, RaribleV2Order} from "@rarible/ethereum-api-client"
 import { CryptoPunksAssetType, Erc20AssetType } from "@rarible/ethereum-api-client/build/models"
 import { CryptoPunkOrder, Order} from "@rarible/ethereum-api-client/build/models/Order"
 import { awaitOwnershipValueToBe } from "./common/await-ownership-value-to-be"
@@ -167,26 +167,7 @@ describe("crypto punks test", function () {
 
 		if (withExistingRaribleBid) {
 			const price = 17
-			try {
-				await sdk2.order.bid({
-					makeAssetType: {
-						assetClass: ASSET_CLASS_ERC20,
-						contract: toAddress(erc20Address),
-					},
-					amount: 1,
-					maker: toAddress(wallet2Address),
-					originFees: [],
-					payouts: [],
-					price: price,
-					takeAssetType: {
-						assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-						contract: toAddress(cryptoPunksAddress),
-						tokenId: punkIndex,
-					},
-				})
-			} catch (e) {
-				throw new Error(`order.bid failed with error: ${e}`)
-			}
+			await createRaribleErc20BidOrder(price)
 			await retry(3, async () => {
 				const bids = await getRariblePunkBids()
 				expectEqual(bids.length, 1, "rarible bids quantity")
@@ -204,26 +185,8 @@ describe("crypto punks test", function () {
 		}
 
 		const price = 7
-		let createdOrder: RaribleV2Order
-		try {
-			createdOrder = await sdk1.order.sell({
-				makeAssetType: {
-					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-					contract: toAddress(cryptoPunksAddress),
-					tokenId: punkIndex,
-				},
-				amount: 1,
-				maker: toAddress(wallet1Address),
-				originFees: [],
-				payouts: [],
-				price: price,
-				takeAssetType: { assetClass: ASSET_CLASS_ETH },
-			}) as RaribleV2Order
-		} catch (e) {
-			throw new Error(`order.sell failed with error: ${e}`)
-		}
+		let createdOrder: RaribleV2Order = await createRaribleEthSellOrder(price)
 
-		console.log(`createdOrder: ${JSON.stringify(createdOrder)}`)
 		checkSellOrderWithEth(createdOrder, price)
 
 		let order = await retry(3, async () => {
@@ -239,15 +202,10 @@ describe("crypto punks test", function () {
 
 		const balanceBefore1 = await web31.eth.getBalance(wallet1Address)
 
-		try {
-			await sdk2.order.fill({
-				order,
-				amount: 1,
-			})
-		} catch (e) {
-			console.log(`order.fill failed with error: ${e}`)
-			throw new Error(`order.fill failed with error: ${e}`)
-		}
+		await runLogging("fill order", sdk2.order.fill({
+			order,
+			amount: 1,
+		}))
 
 		await retry(3, async () => {
 			const orders = await getRariblePunkOrders()
@@ -286,28 +244,7 @@ describe("crypto punks test", function () {
 
 	test("test sell for erc20 by rarible order", async () => {
 		const price = 24
-		let createdOrder: RaribleV2Order
-		try {
-			createdOrder = await sdk1.order.sell({
-				makeAssetType: {
-					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-					contract: toAddress(cryptoPunksAddress),
-					tokenId: punkIndex,
-				},
-				amount: 1,
-				maker: toAddress(wallet1Address),
-				originFees: [],
-				payouts: [],
-				price: price,
-				takeAssetType: {
-					assetClass: ASSET_CLASS_ERC20,
-					contract: toAddress(erc20Address),
-				},
-			}) as RaribleV2Order
-		} catch (e) {
-			throw new Error(`order.sell failed with error: ${e}`)
-		}
-		console.log(`createdOrder: ${JSON.stringify(createdOrder)}`)
+		let createdOrder: RaribleV2Order = await createRaribleErc20SellOrder(price)
 		expectEqual(createdOrder.make.assetType.assetClass, ASSET_CLASS_CRYPTO_PUNKS, "type of order.make.asset")
 		expectEqual(createdOrder.make.value, "1", "order.make.value")
 		expectEqual(createdOrder.makeStock, "1", "order.makeStock")
@@ -324,15 +261,13 @@ describe("crypto punks test", function () {
 		expectEqual(order.make.assetType.assetClass, createdOrder.make.assetType.assetClass, "order.make.assetType")
 		expectEqual(order.make.valueDecimal, createdOrder.make.valueDecimal, "order.make.valueDecimal")
 		expectEqual(order.take.assetType.assetClass, createdOrder.take.assetType.assetClass, "order.take.assetType")
-		try {
-			await sdk2.order.fill({
+		await runLogging(
+			"fill order",
+			sdk2.order.fill({
 				order,
 				amount: 1,
 			})
-		} catch (e) {
-			console.log("order.fill failed with error: " + e)
-			throw new Error(`order.fill failed with error: ${e}`)
-		}
+		)
 		await verifyErc20Balance(erc20, wallet1Address, price)
 		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
@@ -362,26 +297,7 @@ describe("crypto punks test", function () {
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 		if (withExistingRaribleBid) {
 			const price = 17
-			try {
-				await sdk2.order.bid({
-					makeAssetType: {
-						assetClass: ASSET_CLASS_ERC20,
-						contract: toAddress(erc20Address),
-					},
-					amount: 1,
-					maker: toAddress(wallet2Address),
-					originFees: [],
-					payouts: [],
-					price: price,
-					takeAssetType: {
-						assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-						contract: toAddress(cryptoPunksAddress),
-						tokenId: punkIndex,
-					},
-				})
-			} catch (e) {
-				throw new Error(`order.bid failed with error: ${e}`)
-			}
+			await createRaribleErc20BidOrder(price)
 			await retry(3, async () => {
 				const bids = await getRariblePunkBids()
 				expectEqual(bids.length, 1, "rarible bids quantity")
@@ -410,15 +326,14 @@ describe("crypto punks test", function () {
 		})
 		console.log(`order: ${JSON.stringify(order)}`)
 		checkSellOrderWithEth(order, minPrice)
-		try {
-			await sdk2.order.fill({
+		await runLogging(
+			"fill order",
+			sdk2.order.fill({
 				order,
 				amount: 1,
 				infinite: true,
 			})
-		} catch (e) {
-			throw new Error(`fill order failed with error: ${e}`)
-		}
+		)
 		await retry(3, async () => {
 			const orders = await getPunkMarketOrders()
 			expectEqual(orders.length, 0, "punk order after sale")
@@ -465,15 +380,14 @@ describe("crypto punks test", function () {
 		console.log(`order: ${JSON.stringify(order)}`)
 		checkSellOrderWithEth(order, minPrice, wallet2Address)
 		const balanceBefore = await web32.eth.getBalance(wallet2Address)
-		try {
-			await sdk2.order.fill({
+		runLogging(
+			"fill order",
+			sdk2.order.fill({
 				order,
 				amount: 1,
 				infinite: true,
 			})
-		} catch (e) {
-			throw new Error(`fill order failed with error: ${e}`)
-		}
+		)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore).minus(minPrice).toString())
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
 		await awaitNoOwnership(nftOwnership, cryptoPunksAddress, punkIndex, wallet1Address)
@@ -483,25 +397,7 @@ describe("crypto punks test", function () {
 	test("test create punk order with existing rarible order", async () => {
 		// create rarible order
 		const price = 7
-		let createdOrder: RaribleV2Order
-		try {
-			createdOrder = await sdk1.order.sell({
-				makeAssetType: {
-					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-					contract: toAddress(cryptoPunksAddress),
-					tokenId: punkIndex,
-				},
-				amount: 1,
-				maker: toAddress(wallet1Address),
-				originFees: [],
-				payouts: [],
-				price: price,
-				takeAssetType: {assetClass: ASSET_CLASS_ETH},
-			}) as RaribleV2Order
-		} catch (e) {
-			throw new Error(`order.sell failed with error: ${e}`)
-		}
-		console.log(`createdOrder: ${JSON.stringify(createdOrder)}`)
+		let createdOrder: RaribleV2Order = await createRaribleEthSellOrder(price)
 		checkSellOrderWithEth(createdOrder, price)
 		let order = await retry(3, async () => {
 			const orders = await getRariblePunkOrders()
@@ -572,25 +468,7 @@ describe("crypto punks test", function () {
 		checkSellOrderWithEth(punkOrder, minPrice)
 		// create rarible order
 		const price = 7
-		let createdOrder: RaribleV2Order
-		try {
-			createdOrder = await sdk1.order.sell({
-				makeAssetType: {
-					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-					contract: toAddress(cryptoPunksAddress),
-					tokenId: punkIndex,
-				},
-				amount: 1,
-				maker: toAddress(wallet1Address),
-				originFees: [],
-				payouts: [],
-				price: price,
-				takeAssetType: {assetClass: ASSET_CLASS_ETH},
-			}) as RaribleV2Order
-		} catch (e) {
-			throw new Error(`order.sell failed with error: ${e}`)
-		}
-		console.log(`createdOrder: ${JSON.stringify(createdOrder)}`)
+		let createdOrder: RaribleV2Order = await createRaribleEthSellOrder(price)
 		checkSellOrderWithEth(createdOrder, price)
 		// expected: 1 rarible order, no one punk order
 		let order = await retry(3, async () => {
@@ -629,10 +507,57 @@ describe("crypto punks test", function () {
 		// await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
 	}, 30000)
 
-	test("test cancel rarible order", async () => {
-		const price = 24
-		try {
-			await sdk1.order.sell({
+	async function createRaribleErc20BidOrder(price: number): Promise<RaribleV2Order> {
+		return createBidOrder({
+			assetClass: ASSET_CLASS_ERC20,
+			contract: toAddress(erc20Address),
+		}, price)
+	}
+
+	async function createBidOrder(
+		makeAssetType: EthAssetType | Erc20AssetType,
+		price: number
+	): Promise<RaribleV2Order> {
+		let bidOrder = await runLogging(
+			`create ${"contract" in makeAssetType ? "ERC20" : "ETH"} bid order with price ${price}`,
+			sdk2.order.bid({
+				makeAssetType: makeAssetType,
+				amount: 1,
+				maker: toAddress(wallet2Address),
+				originFees: [],
+				payouts: [],
+				price: 10,
+				takeAssetType: {
+					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
+					contract: toAddress(cryptoPunksAddress),
+					tokenId: punkIndex,
+				},
+			}).then((order) => order as RaribleV2Order)
+		)
+		console.log(`created bid order: ${JSON.stringify(bidOrder)}`)
+		return bidOrder
+	}
+
+	async function createRaribleEthSellOrder(price: number): Promise<RaribleV2Order> {
+		return createSellOrder({
+			assetClass: ASSET_CLASS_ETH,
+		}, price)
+	}
+
+	async function createRaribleErc20SellOrder(price: number): Promise<RaribleV2Order> {
+		return createSellOrder({
+			assetClass: ASSET_CLASS_ERC20,
+			contract: toAddress(erc20Address),
+		}, price)
+	}
+
+	async function createSellOrder(
+		takeAssetType: EthAssetType | Erc20AssetType,
+		price: number
+	): Promise<RaribleV2Order> {
+		let sellOrder = await runLogging(
+			`create ${"contract" in takeAssetType ? "ERC20" : "ETH"} sell order with price ${price}`,
+			sdk1.order.sell({
 				makeAssetType: {
 					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
 					contract: toAddress(cryptoPunksAddress),
@@ -643,23 +568,22 @@ describe("crypto punks test", function () {
 				originFees: [],
 				payouts: [],
 				price: price,
-				takeAssetType: {
-					assetClass: ASSET_CLASS_ERC20,
-					contract: toAddress(erc20Address),
-				},
-			})
-		} catch (e) {
-			throw new Error(`order.sell failed with error: ${e}`)
-		}
+				takeAssetType: takeAssetType,
+			}).then((order) => order as RaribleV2Order)
+		)
+		console.log(`created sell order: ${JSON.stringify(sellOrder)}`)
+		return sellOrder
+	}
 
+	test("test cancel rarible order", async () => {
+		const price = 24
+		await createRaribleErc20SellOrder(price)
 		let order = await retry(3, async () => {
 			const orders = await getRariblePunkOrders()
 			expectEqual(orders.length, 1, "orders quantity from api before cancel")
 			return orders[0]
 		})
-
 		await sdk1.order.cancel(order)
-
 		await retry(3, async () => {
 			const orders = await getRariblePunkOrders()
 			expectEqual(orders.length, 0, "orders quantity from api after cancel")
@@ -697,12 +621,10 @@ describe("crypto punks test", function () {
 			expectEqual(orders.length, 1, "punk orders quantity")
 			return orders[0]
 		})
-		try {
-			await sdk1.order.cancel(order)
-		} catch (e) {
-			console.log(`order.cancel failed with error: ${e}`)
-			throw new Error(`order.cancel failed with error: ${e}`)
-		}
+		await runLogging(
+			"cancell order",
+			sdk1.order.cancel(order)
+		)
 		const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
 		console.log(`cancelled forSale: ${JSON.stringify(forSale)}`)
 		expectEqual(forSale.isForSale, false, "cryptoPunk cancelled offer.isForSale")
@@ -725,15 +647,13 @@ describe("crypto punks test", function () {
 			return orders[0]
 		})
 		const newMinPrice = 10
-		try {
-			await sdk1.order.sellUpdate({
+		await runLogging(
+			"update sell order",
+			sdk1.order.sellUpdate({
 				order,
 				price: newMinPrice,
 			})
-		} catch (e) {
-			console.log(`order.sellUpdate failed with error: ${e}`)
-			throw new Error(`order.sellUpdate failed with error: ${e}`)
-		}
+		)
 		const forSaleUpdated = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
 		console.log(`updated forSale: ${JSON.stringify(forSaleUpdated)}`)
 		expectEqual(forSaleUpdated.isForSale, true, "cryptoPunk updated offer.isForSale")
@@ -812,12 +732,10 @@ describe("crypto punks test", function () {
 			expectEqual(bids.length, 1, "punk bids quantity")
 			return bids[0]
 		})
-		try {
-			await sdk2.order.cancel(bid)
-		} catch (e) {
-			console.log(`order.cancel failed with error: ${e}`)
-			throw new Error(`order.cancel failed with error: ${e}`)
-		}
+		await runLogging(
+			"cancel bid order",
+			sdk2.order.cancel(bid)
+		)
 		const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
 		expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
@@ -870,15 +788,13 @@ describe("crypto punks test", function () {
 			return bids[0]
 		})
 		const newPrice = 10
-		try {
-			await sdk2.order.bidUpdate({
+		await runLogging(
+			"update bid",
+			sdk2.order.bidUpdate({
 				order: bid,
 				price: newPrice,
 			})
-		} catch (e) {
-			console.log(`order.bidUpdate failed with error: ${e}`)
-			throw new Error(`order.bidUpdate failed with error: ${e}`)
-		}
+		)
 		const cryptoPunkBidUpdated = await cryptoPunks2.methods.punkBids(punkIndex).call()
 		expectEqual(cryptoPunkBidUpdated.hasBid, true, "cryptoPunkBid hasBid after update")
 		expectEqual(cryptoPunkBidUpdated.value, price.toString(), "cryptoPunkBid value after update")
@@ -962,26 +878,8 @@ describe("crypto punks test", function () {
 		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: 8})
 		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
 		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
-		try {
-			await sdk2.order.bid({
-				makeAssetType: {
-					assetClass: ASSET_CLASS_ERC20,
-					contract: toAddress(erc20Address),
-				},
-				amount: 1,
-				maker: toAddress(wallet2Address),
-				originFees: [],
-				payouts: [],
-				price: 10,
-				takeAssetType: {
-					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-					contract: toAddress(cryptoPunksAddress),
-					tokenId: punkIndex,
-				},
-			})
-		} catch (e) {
-			throw new Error(`order.bid failed with error: ${e}`)
-		}
+		const price = 10
+		await createRaribleErc20BidOrder(price)
 		await retry(3, async () => {
 			const bids = await getPunkMarketBids()
 			expectEqual(bids.length, 1, "punk bids quantity")
@@ -1013,23 +911,7 @@ describe("crypto punks test", function () {
 		}
 		if (withExistingRaribleOrder) {
 			const price = 10
-			try {
-				await sdk1.order.sell({
-					makeAssetType: {
-						assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-						contract: toAddress(cryptoPunksAddress),
-						tokenId: punkIndex,
-					},
-					amount: 1,
-					maker: toAddress(wallet1Address),
-					originFees: [],
-					payouts: [],
-					price: price,
-					takeAssetType: {assetClass: ASSET_CLASS_ETH},
-				})
-			} catch (e) {
-				throw new Error(`order.sell failed with error: ${e}`)
-			}
+			await createRaribleEthSellOrder(price)
 			await retry(3, async () => {
 				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 1, "rarible order before bid")
@@ -1044,28 +926,7 @@ describe("crypto punks test", function () {
 			})
 		}
 		const price = 24
-		let createdBid: RaribleV2Order
-		try {
-			createdBid = await sdk2.order.bid({
-				makeAssetType: {
-					assetClass: ASSET_CLASS_ERC20,
-					contract: toAddress(erc20Address),
-				},
-				amount: 1,
-				maker: toAddress(wallet2Address),
-				originFees: [],
-				payouts: [],
-				price: price,
-				takeAssetType: {
-					assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-					contract: toAddress(cryptoPunksAddress),
-					tokenId: punkIndex,
-				},
-			}) as RaribleV2Order
-		} catch (e) {
-			throw new Error(`order.bid failed with error: ${e}`)
-		}
-		console.log(`bid: ${JSON.stringify(createdBid)}`)
+		const createdBid: RaribleV2Order = await createRaribleErc20BidOrder(price)
 		expectEqual(createdBid.make.assetType.assetClass, ASSET_CLASS_ERC20, "type of bid.make.asset")
 		expectEqual((createdBid.make.assetType as Erc20AssetType).contract.toLowerCase(), erc20Address.toLowerCase(), "contract of bid.make.asset")
 		expectEqual(createdBid.maker, wallet2Address, "bid.maker")
@@ -1084,15 +945,13 @@ describe("crypto punks test", function () {
 		expectEqual(bid.make.assetType.assetClass, createdBid.make.assetType.assetClass, "bid.make.assetType")
 		expectEqual(bid.make.valueDecimal, createdBid.make.valueDecimal, "bid.make.valueDecimal")
 		expectEqual(bid.take.assetType.assetClass, createdBid.take.assetType.assetClass, "bid.take.assetType")
-		try {
-			await sdk1.order.fill({
+		await runLogging(
+			"fill order",
+			sdk1.order.fill({
 				order: bid,
 				amount: price,
 			})
-		} catch (e) {
-			console.log("order.fill failed with error: " + e)
-			throw new Error(`order.fill failed with error: ${e}`)
-		}
+		)
 		await verifyErc20Balance(erc20, wallet1Address, price)
 		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
@@ -1177,23 +1036,7 @@ describe("crypto punks test", function () {
 		}
 		if (withExistingRaribleOrder) {
 			const price = 10
-			try {
-				await sdk1.order.sell({
-					makeAssetType: {
-						assetClass: ASSET_CLASS_CRYPTO_PUNKS,
-						contract: toAddress(cryptoPunksAddress),
-						tokenId: punkIndex,
-					},
-					amount: 1,
-					maker: toAddress(wallet1Address),
-					originFees: [],
-					payouts: [],
-					price: price,
-					takeAssetType: {assetClass: ASSET_CLASS_ETH},
-				})
-			} catch (e) {
-				throw new Error(`order.sell failed with error: ${e}`)
-			}
+			await createRaribleEthSellOrder(price)
 			await retry(3, async () => {
 				const orders = await getRariblePunkOrders()
 				expectEqual(orders.length, 1, "rarible order before bid")
@@ -1224,16 +1067,14 @@ describe("crypto punks test", function () {
 		})
 		console.log(`bid: ${JSON.stringify(bid)}`)
 		checkBidWithEth(bid, price)
-		try {
-			await sdk1.order.fill({
+		await runLogging(
+			"fill order",
+			sdk1.order.fill({
 				order: bid,
 				amount: 1,
 				infinite: true,
 			})
-		} catch (e) {
-			console.log(`fill order (bid) failed with error: ${e}`)
-			throw new Error(`fill order (bid) failed with error: ${e}`)
-		}
+		)
 		await retry(3, async () => {
 			const cryptoPunkBids = await getPunkMarketBids()
 			expectEqual(cryptoPunkBids.length, 0, "punk bids quantity after accepting")
@@ -1367,11 +1208,10 @@ describe("crypto punks test", function () {
 		let contract = detectContract(fromAddress)
 		const cryptoPunkBid = await contract.methods.punkBids(punkIndex).call()
 		if (cryptoPunkBid.bidder.toLowerCase() === fromAddress) {
-			let message = `withdrawing punk market bid from ${fromAddress}`
-			console.log(message)
-			runCatching(message, () => {
+			await runLogging(
+				`withdrawing punk market bid from ${fromAddress}`,
 				contract.methods.withdrawBidForPunk(punkIndex).send({from: fromAddress})
-			})
+			)
 		}
 	}
 
@@ -1499,23 +1339,19 @@ describe("crypto punks test", function () {
 		expectEqual(bid.take.assetType.assetClass, ASSET_CLASS_CRYPTO_PUNKS, "type of bid.take.asset")
 		expectEqual(bid.take.valueDecimal, 1, "bid.take.valueDecimal")
 	}
-
-	function runCatching<T>(
-		computationName: string,
-		computation: () => T,
-		ignoreException: boolean = false
-	): T | undefined {
-		try {
-			console.log("started " + computationName)
-			let result = computation()
-			console.log("finished " + computationName)
-			return result
-		} catch (e) {
-			console.log(computationName + " failed with error", e)
-			if (!ignoreException) {
-				throw e
-			}
-			return undefined
-		}
-	}
 })
+
+async function runLogging<T extends any>(
+	computationName: string,
+	computation: Promise<T>
+): Promise<T> {
+	try {
+		console.log("started " + computationName)
+		let result = await computation
+		console.log("finished " + computationName)
+		return result
+	} catch (e) {
+		console.log(computationName + " failed with error", e)
+		throw e
+	}
+}
