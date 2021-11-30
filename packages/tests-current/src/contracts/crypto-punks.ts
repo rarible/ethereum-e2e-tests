@@ -2,9 +2,10 @@ import type { AbiItem } from "web3-utils"
 import Web3 from "web3"
 import { Contract } from "web3-eth-contract"
 
+export const cryptoPunksAddress = "0x2150332eD9cdCE8Ae06f627fb4ED8e890FAb8049"
+
 export async function cryptoPunksContract(web3: Web3): Promise<Contract> {
-	let punksAddress = "0x2150332eD9cdCE8Ae06f627fb4ED8e890FAb8049"
-	return new web3.eth.Contract(cryptoPunksAbi, punksAddress)
+	return new web3.eth.Contract(cryptoPunksAbi, cryptoPunksAddress)
 }
 
 const cryptoPunksAbi: AbiItem[] = [
