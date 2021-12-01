@@ -2,7 +2,9 @@ import {EthAssetType, RaribleV2Order} from "@rarible/ethereum-api-client"
 import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
-import {printLog, runLogging} from "./util"
+import {retry} from "../common/retry"
+import {expectLength} from "../common/expect-equal"
+import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
 import {
 	ASSET_TYPE_CRYPTO_PUNK,
 	ORDER_TYPE_RARIBLE_V2,
@@ -32,10 +34,10 @@ export async function createRaribleBidOrder(
 		}).then((order) => order as RaribleV2Order)
 	)
 	printLog(`Created RaribleV2 bid order: ${JSON.stringify(bidOrder)}`)
-	checkBidFields(bidOrder, makeAssetType, price, maker)
+	await checkApiRaribleBidExists(maker)
+	checkBidFields(bidOrder, maker, makeAssetType, price)
 	return bidOrder
 }
-
 
 /**
  * Cancels Rarible punk bids via API.
@@ -44,9 +46,9 @@ export async function cancelRaribleBids(
 	sdk: RaribleSdk,
 	maker: string
 ) {
-	const bids = await getRariblePunkBids(maker, sdk)
+	const bids = await getRariblePunkBids(maker)
 	if (bids.length === 0) {
-		printLog("No Rarible bids to cancel")
+		printLog(`No Rarible bids to cancel from ${maker}`)
 		return
 	}
 	printLog(`Bids to cancel with maker = ${maker}: ${bids.length}: ${JSON.stringify(bids)}`)
@@ -57,15 +59,22 @@ export async function cancelRaribleBids(
 			sdk.order.cancel(bid)
 		)
 	}
-	await checkApiNoRaribleBids(sdk)
+	await checkApiNoRaribleBids()
+}
+
+export async function checkApiRaribleBidExists(maker: string) {
+	await retry(RETRY_ATTEMPTS, async () => {
+		const bids = await getRariblePunkBids(maker)
+		expectLength(bids, 1, `bid from ${maker}`)
+	})
 }
 
 /**
  * Request RaribleV2 bids from API.
  */
-export async function getRariblePunkBids(maker: string | undefined, sdk: RaribleSdk): Promise<RaribleV2Order[]> {
+export async function getRariblePunkBids(maker: string | undefined): Promise<RaribleV2Order[]> {
 	return await runLogging(
-		"request RaribleV2 punk bids from API",
-		getBidsForPunkByType<RaribleV2Order>(sdk, ORDER_TYPE_RARIBLE_V2, maker)
+		`request RaribleV2 punk bids from API from ${maker}`,
+		getBidsForPunkByType<RaribleV2Order>(maker, ORDER_TYPE_RARIBLE_V2)
 	)
 }

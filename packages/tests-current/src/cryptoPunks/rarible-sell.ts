@@ -4,17 +4,17 @@ import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
 import {retry} from "../common/retry"
 import {expectLength} from "../common/expect-equal"
-import {printLog, runLogging} from "./util"
+import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
 import {ASSET_TYPE_CRYPTO_PUNK, ORDER_TYPE_RARIBLE_V2} from "./crypto-punks"
 import {checkSellOrder, getInactiveOrdersForPunkByType, getOrdersForPunkByType} from "./common-sell"
 
 /**
  * Request RaribleV2 sell orders from API.
  */
-export async function getRariblePunkOrders(sdk: RaribleSdk, maker: string | undefined): Promise<RaribleV2Order[]> {
+export async function getRariblePunkOrders(maker: string | undefined): Promise<RaribleV2Order[]> {
 	return await runLogging(
 		"request RaribleV2 punk sell orders",
-		getOrdersForPunkByType<RaribleV2Order>(sdk, ORDER_TYPE_RARIBLE_V2, maker)
+		getOrdersForPunkByType<RaribleV2Order>(ORDER_TYPE_RARIBLE_V2, maker)
 	)
 }
 
@@ -22,9 +22,9 @@ export async function getRariblePunkOrders(sdk: RaribleSdk, maker: string | unde
  * Creates RARIBLE_V2 sell order for punk.
  */
 export async function createRaribleSellOrder(
+	maker: string,
 	takeAssetType: EthAssetType | Erc20AssetType,
 	price: number,
-	maker: string,
 	sdk: RaribleSdk
 ): Promise<RaribleV2Order> {
 	let isErc20 = "contract" in takeAssetType
@@ -41,8 +41,8 @@ export async function createRaribleSellOrder(
 		}).then((order) => order as RaribleV2Order)
 	)
 	checkSellOrder(sellOrder, takeAssetType, price, maker)
-	await retry(3, async () => {
-		const orders = await getRariblePunkOrders(sdk, maker)
+	await retry(RETRY_ATTEMPTS, async () => {
+		const orders = await getRariblePunkOrders(maker)
 		expectLength(orders, 1, "rarible order before bid")
 	})
 	printLog(`created sell order: ${JSON.stringify(sellOrder)}`)
@@ -52,11 +52,11 @@ export async function createRaribleSellOrder(
 /**
  * Ensure the API does not return any RARIBLE_V2 sell orders.
  */
-export async function checkApiNoRaribleOrders(sdk: RaribleSdk) {
+export async function checkApiNoRaribleOrders() {
 	await runLogging(
 		"ensure no rarible orders in API",
-		retry(3, async () => {
-			const bids = await getRariblePunkOrders(sdk, undefined)
+		retry(RETRY_ATTEMPTS, async () => {
+			const bids = await getRariblePunkOrders(undefined)
 			expectLength(bids, 0, "rarible sell orders count")
 		})
 	)
@@ -69,12 +69,12 @@ export async function cancelRaribleOrders(
 	sdk: RaribleSdk,
 	maker: string
 ) {
-	const orders = await getRariblePunkOrders(sdk, maker)
+	const orders = await getRariblePunkOrders(maker)
 	if (orders.length === 0) {
 		printLog("No Rarible sell orders to cancel")
 		return
 	}
-	printLog(`orders to cancel ${orders.length}: ${JSON.stringify(orders)}`)
+	printLog(`orders to cancel from ${maker}: ${orders.length}: ${JSON.stringify(orders)}`)
 
 	for (const order of orders) {
 		await runLogging(
@@ -83,15 +83,15 @@ export async function cancelRaribleOrders(
 		)
 	}
 
-	await checkApiNoRaribleOrders(sdk)
+	await checkApiNoRaribleOrders()
 }
 
 /**
  * Request INACTIVE RaribleV2 sell orders from API.
  */
-export async function getInactiveRaribleOrders(sdk: RaribleSdk, maker: string): Promise<RaribleV2Order[]> {
+export async function getInactiveRaribleOrders(maker: string): Promise<RaribleV2Order[]> {
 	return await runLogging(
 		"request INACTIVE RaribleV2 sell orders",
-		getInactiveOrdersForPunkByType(sdk, maker, ORDER_TYPE_RARIBLE_V2)
+		getInactiveOrdersForPunkByType(maker, ORDER_TYPE_RARIBLE_V2)
 	)
 }

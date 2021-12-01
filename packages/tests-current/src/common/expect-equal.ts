@@ -6,6 +6,14 @@ export function expectEqual(actual: any, expected: any, msg: string) {
 	}
 }
 
+export function expectEqualStrict(actual: any, expected: any, msg: string) {
+	try {
+		expect(actual).toStrictEqual(expected)
+	} catch (e) {
+		throw new Error(`${msg} incorrect ${e}`)
+	}
+}
+
 export function expectLength(actual: any, expectedLength: any, msg: string) {
 	try {
 		expect(actual).toHaveLength(expectedLength)

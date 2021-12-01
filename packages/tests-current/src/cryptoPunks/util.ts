@@ -1,3 +1,5 @@
+export const RETRY_ATTEMPTS = 8
+
 export function printLog(message?: any, ...optionalParams: any[]) {
 	let testName = expect.getState().currentTestName
 	console.log(`--- ${testName} ---\n${message}`, optionalParams)
