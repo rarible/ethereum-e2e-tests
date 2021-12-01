@@ -22,7 +22,7 @@ export async function fillOrder(
 			amount: 1,
 		} as RaribleV2OrderFillRequest
 	}
-	await runLogging(`fill order ${order}`,
+	await runLogging(`fill order ${JSON.stringify(order)}`,
 		sdk.order.fill(request)
 	)
 }

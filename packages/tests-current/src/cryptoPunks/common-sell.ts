@@ -1,7 +1,6 @@
-import {Asset, EthAssetType, OrderStatus, Platform, RaribleV2Order} from "@rarible/ethereum-api-client"
+import {EthAssetType, Platform, RaribleV2Order} from "@rarible/ethereum-api-client"
 import {CryptoPunkOrder, Order} from "@rarible/ethereum-api-client/build/models/Order"
-import {CryptoPunksAssetType, Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
-import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
+import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {expectEqual, expectEqualStrict} from "../common/expect-equal"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
 import {ASSET_TYPE_CRYPTO_PUNK, punkIndex} from "./crypto-punks"
@@ -23,7 +22,7 @@ export function checkSellOrder(
 	expectEqualStrict(order.take.assetType, takeAssetType, "type of order.take.asset")
 }
 
-export async function getOrdersForPunkByType<T extends Order>(
+export async function getApiSellOrdersForPunkByType<T extends Order>(
 	type: String,
 	maker: string | undefined
 ): Promise<T[]> {
@@ -35,23 +34,5 @@ export async function getOrdersForPunkByType<T extends Order>(
 	})).orders
 	return orders
 		.filter(a => a["type"] === type)
-		.map(o => o as T)
-}
-
-/**
- * @see getInactiveRaribleOrders
- * @see getInactivePunkMarketOrders
- */
-export async function getInactiveOrdersForPunkByType<T extends Order>(
-	maker: string,
-	type: String
-): Promise<T[]> {
-	const orders = (await apiSdk.apis.order.getSellOrdersByMakerAndByStatus({
-		maker: maker,
-		platform: Platform.ALL,
-		status: [OrderStatus.INACTIVE],
-	})).orders
-	return orders
-		.filter(a => a["type"] === type && ((a["make"] as Asset)["assetType"] as CryptoPunksAssetType)["tokenId"] === punkIndex)
 		.map(o => o as T)
 }

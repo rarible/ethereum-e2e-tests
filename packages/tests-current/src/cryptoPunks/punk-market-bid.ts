@@ -63,7 +63,7 @@ export async function cancelBidsInPunkMarket(maker: string, contract: Contract, 
 	const bid = await contract.methods.punkBids(punkIndex).call()
 	const bidder = bid.bidder.toString().toLowerCase()
 	if (bidder === ZERO_ADDRESS.toLowerCase()) {
-		printLog("No bids found in punk market")
+		printLog(`No bids found in punk market from ${maker}`)
 		return
 	}
 	if (bidder !== maker) {

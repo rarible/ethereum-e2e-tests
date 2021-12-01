@@ -30,7 +30,6 @@ import {
 } from "./cryptoPunks/punk-market-bid"
 import {
 	cancelOrderInPunkMarket, createPunkMarketSellOrder,
-	getInactivePunkMarketOrders,
 	getPunkMarketOrders,
 } from "./cryptoPunks/punk-market-sell"
 import {
@@ -40,10 +39,9 @@ import {
 	getRariblePunkBids,
 } from "./cryptoPunks/rarible-bid"
 import {
-	cancelRaribleOrders, checkApiNoRaribleOrders,
+	cancelRaribleSellOrders, checkApiNoRaribleSellOrders,
 	createRaribleSellOrder,
-	getInactiveRaribleOrders,
-	getRariblePunkOrders,
+	getRariblePunkSellOrders,
 } from "./cryptoPunks/rarible-sell"
 import {checkSellOrder} from "./cryptoPunks/common-sell"
 import {withdrawEth} from "./cryptoPunks/common-eth"
@@ -124,9 +122,9 @@ describe("crypto punks test", function () {
 		await cancelRaribleBids(sdk2, wallet2Address)
 		await cancelRaribleBids(sdk3, wallet3Address)
 
-		await cancelRaribleOrders(sdk1, wallet1Address)
-		await cancelRaribleOrders(sdk2, wallet2Address)
-		await cancelRaribleOrders(sdk3, wallet3Address)
+		await cancelRaribleSellOrders(sdk1, wallet1Address)
+		await cancelRaribleSellOrders(sdk2, wallet2Address)
+		await cancelRaribleSellOrders(sdk3, wallet3Address)
 
 		await verifyErc721Balance(cryptoPunks1, wallet1Address, 10)
 		await verifyErc721Balance(cryptoPunks2, wallet2Address, 0)
@@ -207,7 +205,7 @@ describe("crypto punks test", function () {
 		let sellOrder = await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, price, sdk1)
 
 		await fillOrder(sellOrder, sdk2)
-		await checkApiNoRaribleOrders()
+		await checkApiNoRaribleSellOrders()
 
 		// Check balances.
 		await verifyEthBalance(web31, toAddress(wallet1Address), toBn(balanceBefore1).plus(price).toString())
@@ -366,7 +364,7 @@ describe("crypto punks test", function () {
 		// rarible order must be deleted, because there is no Offer(price: 0, onlySellTo: proxy) anymore
 		// whereas rarible order needs such offer for executing
 		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getRariblePunkOrders(wallet1Address)
+			const orders = await getRariblePunkSellOrders(wallet1Address)
 			expectLength(orders, 0, "rarible orders count after creating punk order")
 		})
 		// // рарибл ордер должен был быть удален
@@ -444,7 +442,7 @@ describe("crypto punks test", function () {
 		let order = await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ERC20, price, sdk1)
 		await sdk1.order.cancel(order)
 		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getRariblePunkOrders(wallet1Address)
+			const orders = await getRariblePunkSellOrders(wallet1Address)
 			expectLength(orders, 0, "orders count from api after cancel")
 		})
 	}, 30000)
@@ -500,7 +498,7 @@ describe("crypto punks test", function () {
 		expectEqual(forSaleUpdated.isForSale, true, "cryptoPunk updated offer.isForSale")
 		expectEqual(forSaleUpdated.minValue, "0", "cryptoPunk updated offer.minValue")
 		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getRariblePunkOrders(wallet1Address)
+			const orders = await getRariblePunkSellOrders(wallet1Address)
 			expectLength(orders, 1, "rarible orders count after update")
 			const order = orders[0]
 			expectEqual(order.take.value, newMinPrice.toString(), "updated sell order: take.value")
@@ -527,10 +525,6 @@ describe("crypto punks test", function () {
 		await retry(RETRY_ATTEMPTS, async () => {
 			const orders = await getPunkMarketOrders(wallet1Address)
 			expectLength(orders, 0, "punk orders count after transfer")
-		})
-		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getInactivePunkMarketOrders(wallet1Address)
-			expectLength(orders, 0, "inactive punk orders count after transfer")
 		})
 	}, 30000)
 
@@ -673,10 +667,6 @@ describe("crypto punks test", function () {
 			const bids = await getPunkMarketBids(wallet2Address)
 			expectLength(bids, 1, "punk bids count after new bid")
 		})
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getInactivePunkMarketOrders(wallet1Address)
-			expectLength(bids, 0, "inactive punk bids count after new bid")
-		})
 	}, 30000)
 
 	test("test bid by punk market and transfer", async () => {
@@ -775,20 +765,16 @@ describe("crypto punks test", function () {
 		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
 		if (withExistingRaribleOrder) {
 			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkOrders(wallet1Address)
+				const orders = await getRariblePunkSellOrders(wallet1Address)
 				expectLength(orders, 0, "rarible order after accepting bid")
 			})
 			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 			// ордера он опять активный, хотя нереализуем
 			// (т к при accept bid идет transfer и записывается Offer(isForSale=false))
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getInactiveRaribleOrders(wallet1Address)
-				expectLength(orders, 0, "inactive rarible order after accepting bid")
-			})
 			// transfer punk back and check that there is still no rarible order
 			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
 			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkOrders(wallet1Address)
+				const orders = await getRariblePunkSellOrders(wallet1Address)
 				expectLength(orders, 0, "rarible orders count after accepting bid")
 			})
 			// // это подтверждение, что ордер нереализуем (панк д б у wallet1)
@@ -816,10 +802,6 @@ describe("crypto punks test", function () {
 			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 			// ордера он опять активный, хотя нереализуем
 			// (т к при accept bid идет transfer и записывается Offer(isForSale=false))
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getInactivePunkMarketOrders(wallet1Address)
-				expectLength(orders, 0, "inactive punk order after accepting bid")
-			})
 			// transfer punk back and check that there is still no punk order
 			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
 			// todo тут тоже ошибка. он inactive, значит при получении панка назад ордер д б active,
@@ -882,19 +864,15 @@ describe("crypto punks test", function () {
 
 		if (withExistingRaribleOrder) {
 			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkOrders(wallet1Address)
+				const orders = await getRariblePunkSellOrders(wallet1Address)
 				expectLength(orders, 0, "rarible order after accepting bid")
 			})
 			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 			// ордера он опять активный, хотя нереализуем (т к при accept bid записывается Offer(isForSale=false)
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getInactiveRaribleOrders(wallet1Address)
-				expectLength(orders, 0, "inactive rarible order after accepting bid")
-			})
 			// transfer punk back and check that there is still no rarible order
 			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
 			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkOrders(wallet1Address)
+				const orders = await getRariblePunkSellOrders(wallet1Address)
 				expectLength(orders, 0, "rarible orders count after accepting bid")
 			})
 			// // это подтверждение, что ордер нереализуем
@@ -921,10 +899,6 @@ describe("crypto punks test", function () {
 			})
 			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
 			// ордера он опять активный, хотя нереализуем (т к при accept bid записывается Offer(isForSale=false)
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getInactivePunkMarketOrders(wallet1Address)
-				expectLength(orders, 0, "inactive punk order after accepting bid")
-			})
 			// transfer punk back and check that there is still no punk order
 			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
 			// todo тут тоже ошибка. он inactive, значит при получении панка назад ордер д б active,

@@ -3,7 +3,7 @@ import {CryptoPunkOrder} from "@rarible/ethereum-api-client/build/models/Order"
 import {expectEqual, expectLength} from "../common/expect-equal"
 import {retry} from "../common/retry"
 import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
-import {checkSellOrder, getInactiveOrdersForPunkByType, getOrdersForPunkByType} from "./common-sell"
+import {checkSellOrder, getApiSellOrdersForPunkByType} from "./common-sell"
 import {
 	ASSET_TYPE_ETH,
 	ORDER_TYPE_CRYPTO_PUNK,
@@ -45,7 +45,7 @@ export async function checkPunkMarketNotForSale(contract: Contract) {
 export async function getPunkMarketOrders(maker: string | undefined): Promise<CryptoPunkOrder[]> {
 	return await runLogging(
 		`request CRYPTO_PUNK sell orders with maker ${maker}`,
-		getOrdersForPunkByType<CryptoPunkOrder>(ORDER_TYPE_CRYPTO_PUNK, maker)
+		getApiSellOrdersForPunkByType<CryptoPunkOrder>(ORDER_TYPE_CRYPTO_PUNK, maker)
 	)
 }
 
@@ -83,15 +83,4 @@ export async function cancelOrderInPunkMarket(maker: string, contract: Contract,
 	printLog(`Found sell order in punk market, cancelling it ${forSale}`)
 	await contract.methods.punkNoLongerForSale(punkIndex).send({from: maker})
 	await checkApiNoMarketOrders()
-}
-
-
-/**
- * Request INACTIVE CRYPTO_PUNK sell orders from API.
- */
-export async function getInactivePunkMarketOrders(maker: string): Promise<CryptoPunkOrder[]> {
-	return await runLogging(
-		"request INACTIVE RaribleV2 sell orders",
-		getInactiveOrdersForPunkByType(maker, ORDER_TYPE_CRYPTO_PUNK)
-	)
 }
