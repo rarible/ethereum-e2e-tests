@@ -259,8 +259,8 @@ describe("crypto punks test", function () {
 		if (withExistingPunkBid) {
 			await createPunkMarketBid(wallet2Address, punkMarketBidPrice, web32, cryptoPunks2)
 		}
-		const minPrice = 8
-		const sellOrder = await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
+		const sellPrice = 8
+		const sellOrder = await createPunkMarketSellOrder(wallet1Address, sellPrice, cryptoPunks1)
 
 		await fillOrder(sellOrder, sdk2)
 		await checkApiNoMarketSellOrders()
@@ -274,7 +274,7 @@ describe("crypto punks test", function () {
 			await checkPunkMarketBidNotExists(cryptoPunks2)
 			await checkApiNoMarketBids(wallet2Address)
 		}
-		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(minPrice).toString())
+		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(sellPrice).toString())
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
 		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
@@ -292,11 +292,11 @@ describe("crypto punks test", function () {
 	}, 30000)
 
 	test("test cancel rarible order because punk market sell order is created", async () => {
-		const price = 7
-		await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, price, sdk1)
+		const rariblePrice = 7
+		await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, rariblePrice, sdk1)
 
-		const minPrice = 8
-		await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
+		const punkMarketPrice = 8
+		await createPunkMarketSellOrder(wallet1Address, punkMarketPrice, cryptoPunks1)
 
 		// Rarible sell order must be deleted because the approval for Rarible order is removed.
 		await checkApiNoRaribleSellOrders()
@@ -304,16 +304,16 @@ describe("crypto punks test", function () {
 
 
 	test("test replace punk market sell order with rarible sell order approval", async () => {
-		const minPrice = 8
-		await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
+		const punkMarketPrice = 8
+		await createPunkMarketSellOrder(wallet1Address, punkMarketPrice, cryptoPunks1)
 
-		const price = 7
-		await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, price, sdk1)
+		const rariblePrice = 7
+		await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, rariblePrice, sdk1)
 
 		await checkPunkMarketForSale(
 			cryptoPunks1,
 			wallet1Address,
-			price,
+			rariblePrice,
 			e2eConfig.transferProxies.cryptoPunks.toLowerCase()
 		)
 
@@ -337,27 +337,27 @@ describe("crypto punks test", function () {
 	}, 30000)
 
 	test("test cancel sell order by punk market", async () => {
-		const minPrice = 8
-		await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
+		const price = 8
+		await createPunkMarketSellOrder(wallet1Address, price, cryptoPunks1)
 		await cancelSellOrderInPunkMarket(wallet1Address, cryptoPunks1, true)
 	}, 30000)
 
 	test("test update sell order by punk market using api", async () => {
-		const minPrice = 8
-		const sellOrder = await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
+		const price = 8
+		const sellOrder = await createPunkMarketSellOrder(wallet1Address, price, cryptoPunks1)
 
-		const newMinPrice = 10
+		const newPrice = 10
 		await runLogging(
 			`update sell order ${sellOrder}`,
 			sdk1.order.sellUpdate({
 				order: sellOrder,
-				price: newMinPrice,
+				price: newPrice,
 			})
 		)
-		await checkPunkMarketForSale(cryptoPunks1, wallet1Address, newMinPrice)
+		await checkPunkMarketForSale(cryptoPunks1, wallet1Address, newPrice)
 		await retry(RETRY_ATTEMPTS, async () => {
 			let updatedSellOrder = await checkApiPunkMarketSellOrderExists(wallet1Address)
-			expectEqual(updatedSellOrder.take.value, newMinPrice.toString(), "updated sell price")
+			expectEqual(updatedSellOrder.take.value, newPrice.toString(), "updated sell price")
 		})
 	}, 30000)
 
@@ -483,8 +483,8 @@ describe("crypto punks test", function () {
 			await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ERC20, rariblePrice, sdk1)
 		}
 		if (withExistingPunkMarketSellOrder) {
-			const minPrice = 28
-			await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
+			const punkMarketPrice = 28
+			await createPunkMarketSellOrder(wallet1Address, punkMarketPrice, cryptoPunks1)
 		}
 
 		const price = 24
@@ -538,7 +538,7 @@ describe("crypto punks test", function () {
 			await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, price, sdk1)
 		}
 		if (withExistingPunkMarketSellOrder) {
-			const minPrice = 28 // TODO[punk]: rename to just sellPrice
+			const minPrice = 28
 			await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
 		}
 
