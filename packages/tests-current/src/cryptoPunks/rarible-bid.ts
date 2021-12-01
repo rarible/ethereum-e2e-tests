@@ -1,0 +1,71 @@
+import {EthAssetType, RaribleV2Order} from "@rarible/ethereum-api-client"
+import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
+import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
+import {toAddress} from "@rarible/types"
+import {printLog, runLogging} from "./util"
+import {
+	ASSET_TYPE_CRYPTO_PUNK,
+	ORDER_TYPE_RARIBLE_V2,
+} from "./crypto-punks"
+import {checkApiNoRaribleBids, checkBidFields, getBidsForPunkByType} from "./common-bid"
+
+/**
+ * Creates RaribleV2 punk bid.
+ */
+export async function createRaribleBidOrder(
+	maker: string,
+	makeAssetType: EthAssetType | Erc20AssetType,
+	price: number,
+	sdk: RaribleSdk
+): Promise<RaribleV2Order> {
+	let isErc20 = "contract" in makeAssetType
+	let bidOrder = await runLogging(
+		`create ${isErc20 ? "ERC20" : "ETH"} bid order with price ${price}`,
+		sdk.order.bid({
+			makeAssetType: makeAssetType,
+			amount: 1,
+			maker: toAddress(maker),
+			originFees: [],
+			payouts: [],
+			price: 10,
+			takeAssetType: ASSET_TYPE_CRYPTO_PUNK,
+		}).then((order) => order as RaribleV2Order)
+	)
+	printLog(`Created RaribleV2 bid order: ${JSON.stringify(bidOrder)}`)
+	checkBidFields(bidOrder, makeAssetType, price, maker)
+	return bidOrder
+}
+
+
+/**
+ * Cancels Rarible punk bids via API.
+ */
+export async function cancelRaribleBids(
+	sdk: RaribleSdk,
+	maker: string
+) {
+	const bids = await getRariblePunkBids(maker, sdk)
+	if (bids.length === 0) {
+		printLog("No Rarible bids to cancel")
+		return
+	}
+	printLog(`Bids to cancel with maker = ${maker}: ${bids.length}: ${JSON.stringify(bids)}`)
+
+	for (const bid of bids) {
+		await runLogging(
+			`cancel bid ${JSON.stringify(bid)}`,
+			sdk.order.cancel(bid)
+		)
+	}
+	await checkApiNoRaribleBids(sdk)
+}
+
+/**
+ * Request RaribleV2 bids from API.
+ */
+export async function getRariblePunkBids(maker: string | undefined, sdk: RaribleSdk): Promise<RaribleV2Order[]> {
+	return await runLogging(
+		"request RaribleV2 punk bids from API",
+		getBidsForPunkByType<RaribleV2Order>(sdk, ORDER_TYPE_RARIBLE_V2, maker)
+	)
+}
