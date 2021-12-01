@@ -18,6 +18,7 @@ import {retry} from "./common/retry"
 import {expectEqual, expectLength} from "./common/expect-equal"
 import {deployTestErc20, erc20Mint} from "./contracts/test-erc20"
 import {verifyErc20Balance} from "./common/verify-erc20-balance"
+import {printLog, runLogging} from "./cryptoPunks/crypto-punks"
 
 describe("crypto punks test", function () {
 
@@ -69,7 +70,10 @@ describe("crypto punks test", function () {
 
 		erc20 = await deployTestErc20(web31)
 		erc20Address = erc20.options.address
-		ASSET_TYPE_ERC20 = { "assetClass": "ERC20", contract: toAddress(erc20Address) }
+		ASSET_TYPE_ERC20 = {
+			assetClass: "ERC20",
+			contract: toAddress(erc20Address),
+		}
 
 		ASSET_TYPE_CRYPTO_PUNK = {
 			assetClass: "CRYPTO_PUNKS",
@@ -86,7 +90,7 @@ describe("crypto punks test", function () {
 
 	afterEach(async () => {
 		await cleanupTestEnvironment()
-	})
+	}, 30000)
 
 	async function cleanupTestEnvironment() {
 		printLog("Started cleaning up test environment")
@@ -1432,25 +1436,4 @@ describe("crypto punks test", function () {
 		expectEqual(bid.take.assetType, ASSET_TYPE_CRYPTO_PUNK, "type of bid.take.asset")
 		expectEqual(bid.take.valueDecimal, 1, "bid.take.valueDecimal")
 	}
-
-	async function runLogging<T extends any>(
-		computationName: string,
-		computation: Promise<T>
-	): Promise<T> {
-		try {
-			printLog(`started '${computationName}'`)
-			let result = await computation
-			printLog(`finished '${computationName}'`)
-			return result
-		} catch (e) {
-			printLog(`failed '${computationName}'`, e)
-			throw e
-		}
-	}
-
-	function printLog(message?: any, ...optionalParams: any[]) {
-		let testName = expect.getState().currentTestName
-		console.log(`--- ${testName} ---\n${message}`, optionalParams)
-	}
-
 })
