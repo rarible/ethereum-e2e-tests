@@ -48,12 +48,13 @@ export async function checkPunkMarketBidExists(contract: Contract, maker: string
 	expectEqual(rawBid.punkIndex, punkIndex.toString(), "rawBid.punkIndex")
 }
 
-// TODO[punk]: check price too
-export async function checkApiPunkMarketBidExists(maker: string): Promise<CryptoPunkOrder> {
+export async function checkApiPunkMarketBidExists(maker: string, price: number): Promise<CryptoPunkOrder> {
 	return await retry(RETRY_ATTEMPTS, async () => {
 		const bids = await getPunkMarketBids(maker)
 		expectLength(bids, 1, `bid orders from ${maker}`)
-		return bids[0]
+		let bid = bids[0]
+		expectEqual(bid.make.value, price.toString(), "API bid price")
+		return bid
 	})
 }
 

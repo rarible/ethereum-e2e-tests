@@ -183,9 +183,9 @@ describe("crypto punks test", function () {
 		const balanceBefore1 = await web31.eth.getBalance(wallet1Address)
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 
+		const raribleBidPrice = 17
 		if (withExistingRaribleBid) {
-			const raribleBid = 17
-			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ETH, raribleBid, sdk2)
+			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ETH, raribleBidPrice, sdk2)
 		}
 
 		const punkBidPrice = 5
@@ -212,7 +212,7 @@ describe("crypto punks test", function () {
 
 		if (withExistingRaribleBid) {
 			// The Rarible bid must survive.
-			await checkApiRaribleBidExists(wallet2Address)
+			await checkApiRaribleBidExists(wallet2Address, raribleBidPrice)
 		}
 
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
@@ -251,8 +251,8 @@ describe("crypto punks test", function () {
 			throw new Error("check supports case with either rarible or punk bid")
 		}
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
+		const raribleBidPrice = 17
 		if (withExistingRaribleBid) {
-			const raribleBidPrice = 17
 			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ETH, raribleBidPrice, sdk2)
 		}
 		const punkMarketBidPrice = 5
@@ -266,7 +266,7 @@ describe("crypto punks test", function () {
 		await checkApiNoMarketSellOrders()
 		if (withExistingRaribleBid) {
 			// Rarible bid must survive
-			await checkApiRaribleBidExists(wallet2Address)
+			await checkApiRaribleBidExists(wallet2Address, raribleBidPrice)
 		}
 		if (withExistingPunkBid) {
 			// Punk market bid must be cancelled (because the bidder got the punk he wanted).
@@ -404,7 +404,7 @@ describe("crypto punks test", function () {
 		await cryptoPunks2.methods.withdraw().send({from: wallet2Address})
 
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
-		await checkApiRaribleBidExists(wallet2Address)
+		await checkApiRaribleBidExists(wallet2Address, newPrice)
 	}, 30000)
 
 	test("test update bid by punk market using api", async () => {
@@ -423,7 +423,7 @@ describe("crypto punks test", function () {
 		)
 
 		await checkPunkMarketBidExists(cryptoPunks2, wallet2Address, newPrice)
-		await checkApiRaribleBidExists(wallet2Address)
+		await checkApiRaribleBidExists(wallet2Address, newPrice)
 
 		await withdrawEth(web32, cryptoPunks2, wallet2Address, price)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
@@ -436,7 +436,7 @@ describe("crypto punks test", function () {
 		const newPrice = 10
 		await createPunkMarketBid(wallet3Address, newPrice, web33, cryptoPunks3)
 
-		await checkApiRaribleBidExists(wallet3Address)
+		await checkApiRaribleBidExists(wallet3Address, newPrice)
 	}, 30000)
 
 	test("test bid by punk market and transfer for free from the owner", async () => {
@@ -455,8 +455,8 @@ describe("crypto punks test", function () {
 		const rariblePrice = 10
 		await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, rariblePrice, sdk1)
 
-		await checkApiRaribleBidExists(wallet2Address)
-		await checkApiPunkMarketBidExists(wallet2Address)
+		await checkApiPunkMarketBidExists(wallet2Address, punkMarketPrice)
+		await checkApiRaribleBidExists(wallet2Address, rariblePrice)
 	}, 30000)
 
 	test("test buy using rarible bid with erc20", async () => {

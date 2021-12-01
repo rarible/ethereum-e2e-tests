@@ -3,7 +3,7 @@ import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
 import {retry} from "../common/retry"
-import {expectLength} from "../common/expect-equal"
+import {expectEqual, expectLength} from "../common/expect-equal"
 import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
 import {
 	ASSET_TYPE_CRYPTO_PUNK,
@@ -34,7 +34,7 @@ export async function createRaribleBidOrder(
 		}).then((order) => order as RaribleV2Order)
 	)
 	printLog(`Created RaribleV2 bid order: ${JSON.stringify(bidOrder)}`)
-	await checkApiRaribleBidExists(maker)
+	await checkApiRaribleBidExists(maker, price)
 	checkBidFields(bidOrder, maker, makeAssetType, price)
 	return bidOrder
 }
@@ -62,11 +62,12 @@ export async function cancelRaribleBids(
 	await checkApiNoRaribleBids()
 }
 
-// TODO[punk]: check price too
-export async function checkApiRaribleBidExists(maker: string) {
+export async function checkApiRaribleBidExists(maker: string, price: number) {
 	await retry(RETRY_ATTEMPTS, async () => {
 		const bids = await getRariblePunkBids(maker)
 		expectLength(bids, 1, `bid from ${maker}`)
+		let bid = bids[0]
+		expectEqual(bid.make.value, price.toString(), "bid price")
 	})
 }
 
