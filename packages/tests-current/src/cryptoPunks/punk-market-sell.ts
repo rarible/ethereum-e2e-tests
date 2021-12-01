@@ -7,8 +7,9 @@ import {checkSellOrder, getApiSellOrdersForPunkByType} from "./common-sell"
 import {
 	ASSET_TYPE_ETH,
 	ORDER_TYPE_CRYPTO_PUNK,
-	punkIndex,
+	punkIndex, ZERO_ADDRESS,
 } from "./crypto-punks"
+import {getRariblePunkBids} from "./rarible-bid"
 
 /**
  * Creates sell order from [maker] in the punk market.
@@ -16,22 +17,37 @@ import {
 export async function createPunkMarketSellOrder(
 	maker: string,
 	price: number,
-	contract: Contract
+	contract: Contract,
+	onlySellTo: string = ZERO_ADDRESS
 ): Promise<CryptoPunkOrder> {
-	await contract.methods.offerPunkForSale(punkIndex, price).send({from: maker})
+	if (onlySellTo === ZERO_ADDRESS) {
+		await contract.methods.offerPunkForSale(punkIndex, price).send({from: maker})
+	} else {
+		await contract.methods.offerPunkForSaleToAddress(punkIndex, price, onlySellTo)
+	}
+	await checkPunkMarketForSale(contract, maker, price, onlySellTo)
+	let order = await retry(RETRY_ATTEMPTS, async () => {
+		const orders = await getPunkMarketSellOrders(maker)
+		expectLength(orders, 1, "punk market orders count")
+		return orders[0]
+	})
+	printLog(`Created punk market order: ${JSON.stringify(order)}`)
+	checkSellOrder(order, ASSET_TYPE_ETH, price, maker, onlySellTo === ZERO_ADDRESS ? undefined : onlySellTo)
+	return order
+}
+
+export async function checkPunkMarketForSale(
+	contract: Contract,
+	maker: string,
+	price: number,
+	onlySellTo: string = ZERO_ADDRESS
+) {
 	const rawSell = await contract.methods.punksOfferedForSale(punkIndex).call()
 	expectEqual(rawSell.isForSale, true, "rawSell.isForSale")
 	expectEqual(rawSell.seller.toLowerCase(), maker, "rawSell.seller")
 	expectEqual(rawSell.minValue, price.toString(), "rawSell.minValue")
 	expectEqual(rawSell.punkIndex, punkIndex.toString(), "rawSell.punkIndex")
-	let order = await retry(RETRY_ATTEMPTS, async () => {
-		const orders = await getPunkMarketOrders(maker)
-		expectLength(orders, 1, "punk market orders count")
-		return orders[0]
-	})
-	printLog(`Created punk market order: ${JSON.stringify(order)}`)
-	checkSellOrder(order, ASSET_TYPE_ETH, price, maker)
-	return order
+	expectEqual(rawSell.onlySellTo, onlySellTo, "rawSell.onlySellTo")
 }
 
 export async function checkPunkMarketNotForSale(contract: Contract) {
@@ -42,21 +58,29 @@ export async function checkPunkMarketNotForSale(contract: Contract) {
 /**
  * Request CRYPTO_PUNK sell orders from API.
  */
-export async function getPunkMarketOrders(maker: string | undefined): Promise<CryptoPunkOrder[]> {
+export async function getPunkMarketSellOrders(maker: string | undefined): Promise<CryptoPunkOrder[]> {
 	return await runLogging(
 		`request CRYPTO_PUNK sell orders with maker ${maker}`,
 		getApiSellOrdersForPunkByType<CryptoPunkOrder>(ORDER_TYPE_CRYPTO_PUNK, maker)
 	)
 }
 
+export async function checkApiPunkMarketSellOrderExists(maker: string): Promise<CryptoPunkOrder> {
+	return await retry(RETRY_ATTEMPTS, async () => {
+		const bids = await getPunkMarketSellOrders(maker)
+		expectLength(bids, 1, `sell orders from ${maker}`)
+		return bids[0]
+	})
+}
+
 /**
  * Ensure the API does not return any CRYPTO_PUNK sell orders.
  */
-export async function checkApiNoMarketOrders() {
+export async function checkApiNoMarketSellOrders() {
 	await runLogging(
 		"ensure no punk market sell orders in API",
 		retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getPunkMarketOrders(undefined)
+			const orders = await getPunkMarketSellOrders(undefined)
 			expectLength(orders, 0, "punk sell orders count")
 		})
 	)
@@ -82,5 +106,5 @@ export async function cancelOrderInPunkMarket(maker: string, contract: Contract,
 	expectEqual(forSale.seller.toLowerCase(), maker, "seller")
 	printLog(`Found sell order in punk market, cancelling it ${forSale}`)
 	await contract.methods.punkNoLongerForSale(punkIndex).send({from: maker})
-	await checkApiNoMarketOrders()
+	await checkApiNoMarketSellOrders()
 }

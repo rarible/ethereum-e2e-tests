@@ -22,7 +22,7 @@ export async function createRaribleBidOrder(
 ): Promise<RaribleV2Order> {
 	let isErc20 = "contract" in makeAssetType
 	let bidOrder = await runLogging(
-		`create ${isErc20 ? "ERC20" : "ETH"} bid order with price ${price}`,
+		`create ${isErc20 ? "ERC20" : "ETH"} Rarible bid order with price ${price}`,
 		sdk.order.bid({
 			makeAssetType: makeAssetType,
 			amount: 1,

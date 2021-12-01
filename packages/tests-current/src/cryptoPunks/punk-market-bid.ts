@@ -43,12 +43,19 @@ export async function createPunkMarketBid(
 	return bid
 }
 
+export async function checkPunkMarketBidNotExists(
+	contract: Contract,
+) {
+	const rawBid = await contract.methods.punkBids(punkIndex).call()
+	expectEqual(rawBid.hasBid, false, "bid must not exist")
+}
+
 /**
  * Ensure the API does not return any CRYPTO_PUNK bids.
  */
 export async function checkApiNoMarketBids(maker: string) {
 	await runLogging(
-		"ensure no punk market bids in API",
+		`ensure no punk market bids from ${maker} in API`,
 		retry(RETRY_ATTEMPTS, async () => {
 			const bids = await getPunkMarketBids(maker)
 			expectLength(bids, 0, "punk bids count")

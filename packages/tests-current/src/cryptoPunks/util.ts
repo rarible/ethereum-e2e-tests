@@ -1,8 +1,18 @@
 export const RETRY_ATTEMPTS = 8
 
-export function printLog(message?: any, ...optionalParams: any[]) {
+function getMessage(message: any): string {
 	let testName = expect.getState().currentTestName
-	console.log(`--- ${testName} ---\n${message}`, optionalParams)
+	return `--- ${testName} ---\n${message}`
+}
+
+export function printLog(message: any, ...optionalParams: any[]) {
+	let fullMessage = getMessage(message)
+	console.log(fullMessage, optionalParams)
+}
+
+export function printError(message: any, ...optionalParams: any[]) {
+	let fullMessage = getMessage(message)
+	console.error(fullMessage, optionalParams)
 }
 
 export async function runLogging<T extends any>(
@@ -15,7 +25,7 @@ export async function runLogging<T extends any>(
 		printLog(`finished '${computationName}'`)
 		return result
 	} catch (e) {
-		printLog(`failed '${computationName}'`, e)
+		printError(`failed '${computationName}'`, e)
 		throw e
 	}
 }

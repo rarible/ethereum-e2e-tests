@@ -15,11 +15,13 @@ export async function fillOrder(
 		request = {
 			order: order,
 			amount: 1,
+			infinite: true,
 		} as CryptoPunksOrderFillRequest
 	} else {
 		request = {
 			order: order,
 			amount: 1,
+			infinite: true,
 		} as RaribleV2OrderFillRequest
 	}
 	await runLogging(`fill order ${JSON.stringify(order)}`,
