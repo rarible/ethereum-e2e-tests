@@ -62,6 +62,7 @@ export async function cancelRaribleBids(
 	await checkApiNoRaribleBids()
 }
 
+// TODO[punk]: check price too
 export async function checkApiRaribleBidExists(maker: string) {
 	await retry(RETRY_ATTEMPTS, async () => {
 		const bids = await getRariblePunkBids(maker)

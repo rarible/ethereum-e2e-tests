@@ -14,6 +14,7 @@ import {
 	ZERO_ADDRESS,
 } from "./crypto-punks"
 import {checkBidFields, getBidsForPunkByType} from "./common-bid"
+import {getPunkMarketSellOrders} from "./punk-market-sell"
 
 /**
  * Creates bid from [maker] in the punk market.
@@ -27,12 +28,7 @@ export async function createPunkMarketBid(
 	const balanceBefore = await web3.eth.getBalance(maker)
 	await contract.methods.enterBidForPunk(punkIndex).send({from: maker, value: price})
 	await verifyEthBalance(web3, toAddress(maker), toBn(balanceBefore).minus(price).toString())
-	const rawBid = await contract.methods.punkBids(punkIndex).call()
-	printLog(`Raw punk market bid: ${JSON.stringify(rawBid)}`)
-	expectEqual(rawBid.hasBid, true, "rawBid.hasBid")
-	expectEqual(rawBid.bidder.toLowerCase(), maker, "rawBid.bidder")
-	expectEqual(rawBid.value, price.toString(), "rawBid.value")
-	expectEqual(rawBid.punkIndex, punkIndex.toString(), "rawBid.punkIndex")
+	await checkPunkMarketBidExists(contract, maker, price)
 	const bid = await retry(RETRY_ATTEMPTS, async () => {
 		const cryptoPunkBids = await getPunkMarketBids(maker)
 		expectLength(cryptoPunkBids, 1, "created punk market bids")
@@ -41,6 +37,24 @@ export async function createPunkMarketBid(
 	printLog(`Created CRYPTO_PUNK bid: ${JSON.stringify(bid)}`)
 	checkBidFields(bid, maker, ASSET_TYPE_ETH, price)
 	return bid
+}
+
+export async function checkPunkMarketBidExists(contract: Contract, maker: string, price: number) {
+	const rawBid = await contract.methods.punkBids(punkIndex).call()
+	printLog(`Raw punk market bid: ${JSON.stringify(rawBid)}`)
+	expectEqual(rawBid.hasBid, true, "rawBid.hasBid")
+	expectEqual(rawBid.bidder.toLowerCase(), maker, "rawBid.bidder")
+	expectEqual(rawBid.value, price.toString(), "rawBid.value")
+	expectEqual(rawBid.punkIndex, punkIndex.toString(), "rawBid.punkIndex")
+}
+
+// TODO[punk]: check price too
+export async function checkApiPunkMarketBidExists(maker: string): Promise<CryptoPunkOrder> {
+	return await retry(RETRY_ATTEMPTS, async () => {
+		const bids = await getPunkMarketBids(maker)
+		expectLength(bids, 1, `bid orders from ${maker}`)
+		return bids[0]
+	})
 }
 
 export async function checkPunkMarketBidNotExists(

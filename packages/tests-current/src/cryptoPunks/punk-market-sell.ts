@@ -9,7 +9,6 @@ import {
 	ORDER_TYPE_CRYPTO_PUNK,
 	punkIndex, ZERO_ADDRESS,
 } from "./crypto-punks"
-import {getRariblePunkBids} from "./rarible-bid"
 
 /**
  * Creates sell order from [maker] in the punk market.
@@ -67,9 +66,9 @@ export async function getPunkMarketSellOrders(maker: string | undefined): Promis
 
 export async function checkApiPunkMarketSellOrderExists(maker: string): Promise<CryptoPunkOrder> {
 	return await retry(RETRY_ATTEMPTS, async () => {
-		const bids = await getPunkMarketSellOrders(maker)
-		expectLength(bids, 1, `sell orders from ${maker}`)
-		return bids[0]
+		const sellOrders = await getPunkMarketSellOrders(maker)
+		expectLength(sellOrders, 1, `sell orders from ${maker}`)
+		return sellOrders[0]
 	})
 }
 
@@ -89,15 +88,23 @@ export async function checkApiNoMarketSellOrders() {
 /**
  * Cancel native sell orders, if any. Ensure there are no native sell orders in the API response.
  */
-export async function cancelOrderInPunkMarket(maker: string, contract: Contract, throwIfAnotherSeller: boolean = true) {
+export async function cancelSellOrderInPunkMarket(
+	maker: string,
+	contract: Contract,
+	throwIfNotOnSale: boolean = true
+) {
 	const forSale = await contract.methods.punksOfferedForSale(punkIndex).call()
 	if (!forSale.isForSale) {
-		printLog(`No sell orders found in punk market with maker = ${maker}`)
+		let message = `No sell orders found in punk market with maker = ${maker}`
+		if (throwIfNotOnSale) {
+			throw new Error(message)
+		}
+		printLog(message)
 		return
 	}
 	if (forSale.seller.toLowerCase() !== maker) {
 		let message = `Sell order is from another maker ${maker}`
-		if (throwIfAnotherSeller) {
+		if (throwIfNotOnSale) {
 			throw new Error(message)
 		}
 		printLog(message)

@@ -2,7 +2,6 @@ import {createRaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
 import {Web3Ethereum} from "@rarible/web3-ethereum"
 import {Contract} from "web3-eth-contract"
-import {RaribleV2Order} from "@rarible/ethereum-api-client"
 import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {e2eConfig} from "@rarible/protocol-ethereum-sdk/build/config/e2e"
 import {awaitOwnershipValueToBe} from "./common/await-ownership-value-to-be"
@@ -14,38 +13,29 @@ import {cryptoPunksAddress, cryptoPunksContract} from "./contracts/crypto-punks"
 import {verifyEthBalance} from "./common/verify-eth-balance"
 import {toBn} from "./common/to-bn"
 import {retry} from "./common/retry"
-import {expectEqual, expectLength} from "./common/expect-equal"
+import {expectEqual} from "./common/expect-equal"
 import {deployTestErc20, erc20Mint} from "./contracts/test-erc20"
 import {verifyErc20Balance} from "./common/verify-erc20-balance"
-import {
-	ASSET_TYPE_CRYPTO_PUNK,
-	ASSET_TYPE_ETH,
-	punkIndex,
-} from "./cryptoPunks/crypto-punks"
+import {ASSET_TYPE_CRYPTO_PUNK, ASSET_TYPE_ETH, punkIndex} from "./cryptoPunks/crypto-punks"
 import {printLog, RETRY_ATTEMPTS, runLogging} from "./cryptoPunks/util"
 import {
-	cancelBidsInPunkMarket, checkApiNoMarketBids, checkPunkMarketBidNotExists,
+	cancelBidsInPunkMarket,
+	checkApiNoMarketBids,
+	checkApiPunkMarketBidExists,
+	checkPunkMarketBidExists,
+	checkPunkMarketBidNotExists,
 	createPunkMarketBid,
-	getPunkMarketBids,
 } from "./cryptoPunks/punk-market-bid"
 import {
-	cancelOrderInPunkMarket,
+	cancelSellOrderInPunkMarket,
 	checkApiNoMarketSellOrders,
+	checkApiPunkMarketSellOrderExists,
 	checkPunkMarketForSale,
+	checkPunkMarketNotForSale,
 	createPunkMarketSellOrder,
-	getPunkMarketSellOrders,
 } from "./cryptoPunks/punk-market-sell"
-import {
-	cancelRaribleBids,
-	checkApiRaribleBidExists,
-	createRaribleBidOrder,
-	getRariblePunkBids,
-} from "./cryptoPunks/rarible-bid"
-import {
-	cancelRaribleSellOrders, checkApiNoRaribleSellOrders,
-	createRaribleSellOrder,
-	getRariblePunkSellOrders,
-} from "./cryptoPunks/rarible-sell"
+import {cancelRaribleBids, checkApiRaribleBidExists, createRaribleBidOrder} from "./cryptoPunks/rarible-bid"
+import {cancelRaribleSellOrders, checkApiNoRaribleSellOrders, createRaribleSellOrder} from "./cryptoPunks/rarible-sell"
 import {withdrawEth} from "./cryptoPunks/common-eth"
 import {transferPunkBackToInitialOwner} from "./cryptoPunks/common-test"
 import {fillOrder} from "./cryptoPunks/common-fill"
@@ -116,9 +106,9 @@ describe("crypto punks test", function () {
 		await cancelBidsInPunkMarket(wallet2Address, cryptoPunks2, false)
 		await cancelBidsInPunkMarket(wallet3Address, cryptoPunks3, false)
 
-		await cancelOrderInPunkMarket(wallet1Address, cryptoPunks1, false)
-		await cancelOrderInPunkMarket(wallet2Address, cryptoPunks2, false)
-		await cancelOrderInPunkMarket(wallet3Address, cryptoPunks3, false)
+		await cancelSellOrderInPunkMarket(wallet1Address, cryptoPunks1, false)
+		await cancelSellOrderInPunkMarket(wallet2Address, cryptoPunks2, false)
+		await cancelSellOrderInPunkMarket(wallet3Address, cryptoPunks3, false)
 
 		await cancelRaribleBids(sdk1, wallet1Address)
 		await cancelRaribleBids(sdk2, wallet2Address)
@@ -301,11 +291,10 @@ describe("crypto punks test", function () {
 		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
 	}, 30000)
 
-	test("test create punk order with existing rarible order", async () => {
+	test("test cancel rarible order because punk market sell order is created", async () => {
 		const price = 7
 		await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, price, sdk1)
 
-		// create punk order
 		const minPrice = 8
 		await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
 
@@ -314,7 +303,7 @@ describe("crypto punks test", function () {
 	}, 30000)
 
 
-	test("test replace punk market order with rarible sell order approval", async () => {
+	test("test replace punk market sell order with rarible sell order approval", async () => {
 		const minPrice = 8
 		await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
 
@@ -337,293 +326,169 @@ describe("crypto punks test", function () {
 		let order = await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ERC20, price, sdk1)
 		await sdk1.order.cancel(order)
 		await checkApiNoRaribleSellOrders()
+
+		// Punk market sell order for approval still exists.
+		await checkPunkMarketForSale(
+			cryptoPunks1,
+			wallet1Address,
+			price,
+			e2eConfig.transferProxies.cryptoPunks.toLowerCase()
+		)
 	}, 30000)
 
 	test("test cancel sell order by punk market", async () => {
 		const minPrice = 8
 		await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
-		await cancelOrderInPunkMarket(wallet1Address, cryptoPunks1)
+		await cancelSellOrderInPunkMarket(wallet1Address, cryptoPunks1, true)
 	}, 30000)
 
-
-	test("test update sell by punk market using api", async () => {
+	test("test update sell order by punk market using api", async () => {
 		const minPrice = 8
-		await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({from: wallet1Address})
-		const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
-		printLog(`forSale: ${JSON.stringify(forSale)}`)
-		expectEqual(forSale.isForSale, true, "cryptoPunk offer.isForSale")
-		expectEqual(forSale.minValue, minPrice.toString(), "cryptoPunk offer.minValue")
-		const order = await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getPunkMarketSellOrders(wallet1Address)
-			expectLength(orders, 1, "punk orders count")
-			return orders[0]
-		})
+		const sellOrder = await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
+
 		const newMinPrice = 10
 		await runLogging(
-			"update sell order",
+			`update sell order ${sellOrder}`,
 			sdk1.order.sellUpdate({
-				order,
+				order: sellOrder,
 				price: newMinPrice,
 			})
 		)
-		const forSaleUpdated = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
-		printLog(`updated forSale: ${JSON.stringify(forSaleUpdated)}`)
-		expectEqual(forSaleUpdated.isForSale, true, "cryptoPunk updated offer.isForSale")
-		expectEqual(forSaleUpdated.minValue, "0", "cryptoPunk updated offer.minValue")
+		await checkPunkMarketForSale(cryptoPunks1, wallet1Address, newMinPrice)
 		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getRariblePunkSellOrders(wallet1Address)
-			expectLength(orders, 1, "rarible orders count after update")
-			const order = orders[0]
-			expectEqual(order.take.value, newMinPrice.toString(), "updated sell order: take.value")
-		})
-		//todo ошибка: предыдущего панк-ордера не должно быть
-		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getPunkMarketSellOrders(wallet1Address)
-			expectLength(orders, 0, "punk orders count after update")
+			let updatedSellOrder = await checkApiPunkMarketSellOrderExists(wallet1Address)
+			expectEqual(updatedSellOrder.take.value, newMinPrice.toString(), "updated sell price")
 		})
 	}, 30000)
 
-	test("test punk order and transfer", async () => {
-		await cryptoPunks1.methods.offerPunkForSale(punkIndex, 8).send({from: wallet1Address})
-		const forSale = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
-		expectEqual(forSale.isForSale, true, "cryptoPunk offer.isForSale")
-		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getPunkMarketSellOrders(wallet1Address)
-			expectLength(orders, 1, "punk orders count")
-		})
+	test("test punk market sell order and transfer for free", async () => {
+		await createPunkMarketSellOrder(wallet1Address, 8, cryptoPunks1)
 		await sdk1.nft.transfer(ASSET_TYPE_CRYPTO_PUNK, toAddress(wallet2Address))
-		const forSaleCancelled = await cryptoPunks1.methods.punksOfferedForSale(punkIndex).call()
-		expectEqual(forSaleCancelled.isForSale, false, "cryptoPunk offer.isForSale after transfer")
-		// punk order is deleted
-		await retry(RETRY_ATTEMPTS, async () => {
-			const orders = await getPunkMarketSellOrders(wallet1Address)
-			expectLength(orders, 0, "punk orders count after transfer")
-		})
+		await checkPunkMarketNotForSale(cryptoPunks1)
+		await checkApiNoMarketSellOrders()
 	}, 30000)
 
 	test("test cancel bid by punk market", async () => {
 		const price = 8
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: price})
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+		await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count")
-		})
 		await cryptoPunks2.methods.withdrawBidForPunk(punkIndex).send({from: wallet2Address})
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
-		const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 0, "punk bids count from api")
-		})
+		await checkPunkMarketBidNotExists(cryptoPunks2)
+		await checkApiNoMarketBids(wallet2Address)
 	}, 30000)
 
 	test("test cancel bid by punk market using api", async () => {
 		const price = 8
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: price})
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
+		const bid = await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
-		const bid = await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count")
-			return bids[0]
-		})
 		await runLogging(
-			"cancel bid order",
+			`cancel bid ${bid}`,
 			sdk2.order.cancel(bid)
 		)
-		const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkCancelledBid.hasBid, false, "cancelled bid.hasBid")
+		await checkPunkMarketBidNotExists(cryptoPunks2)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
-		await retry(RETRY_ATTEMPTS, async () => {
-			const cryptoPunkBids = await getPunkMarketBids(wallet2Address)
-			expectLength(cryptoPunkBids, 0, "punk bids count from api")
-		})
+		await checkApiNoMarketBids(wallet2Address)
 	}, 30000)
 
 	test("test update bid by punk market", async () => {
 		const price = 8
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: price})
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
-		expectEqual(cryptoPunkBid.value, price.toString(), "cryptoPunkBid.value")
+		await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count")
-			const bid = bids[0]
-			expectEqual(bid.make.value, price.toString(), "updated bid: make.value")
-		})
-		const newPrice = 10//todo check на понижение
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: newPrice})
-		const cryptoPunkBidUpdated = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBidUpdated.hasBid, true, "cryptoPunkBid updated .hasBid")
-		expectEqual(cryptoPunkBidUpdated.value, newPrice.toString(), "cryptoPunkBid updated .value")
+
+		const newPrice = 10
+		await createPunkMarketBid(wallet2Address, newPrice, web32, cryptoPunks2)
 		await cryptoPunks2.methods.withdraw().send({from: wallet2Address})
+
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count after update")
-			const bid = bids[0]
-			expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
-		})
+		await checkApiRaribleBidExists(wallet2Address)
 	}, 30000)
 
 	test("test update bid by punk market using api", async () => {
 		const price = 8
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: price})
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
-		expectEqual(cryptoPunkBid.value, price.toString(), "cryptoPunkBid.value")
+		const bid = await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
-		const bid = await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count")
-			return bids[0]
-		})
+
 		const newPrice = 10
 		await runLogging(
-			"update bid",
+			"update bid using SDK API",
 			sdk2.order.bidUpdate({
 				order: bid,
 				price: newPrice,
 			})
 		)
-		const cryptoPunkBidUpdated = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBidUpdated.hasBid, true, "cryptoPunkBid hasBid after update")
-		expectEqual(cryptoPunkBidUpdated.value, price.toString(), "cryptoPunkBid value after update")
-		await cryptoPunks2.methods.withdraw().send({from: wallet2Address})
+
+		await checkPunkMarketBidExists(cryptoPunks2, wallet2Address, newPrice)
+		await checkApiRaribleBidExists(wallet2Address)
+
+		await withdrawEth(web32, cryptoPunks2, wallet2Address, price)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getRariblePunkBids(wallet2Address)
-			expectLength(bids, 1, "rarible bids count after update")
-			const bid = bids[0]
-			expectEqual(bid.make.value, newPrice.toString(), "updated bid: make.value")
-		})
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count after update")
-			expectEqual(bid.make.value, price.toString(), "punk bid: make.value after update")
-		})
 	}, 30000)
 
 	test("test punk bids from different users", async () => {
 		const price = 8
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: price})
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
-		expectEqual(cryptoPunkBid.bidder.toLowerCase(), wallet2Address, "cryptoPunkBid.bidder")
-		expectEqual(cryptoPunkBid.value, price.toString(), "cryptoPunkBid.value")
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count")
-		})
+		await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
+
 		const newPrice = 10
-		await cryptoPunks3.methods.enterBidForPunk(punkIndex).send({from: wallet3Address, value: newPrice})
-		const newCryptoPunkBid = await cryptoPunks3.methods.punkBids(punkIndex).call()
-		expectEqual(newCryptoPunkBid.hasBid, true, "new cryptoPunkBid.hasBid")
-		expectEqual(newCryptoPunkBid.bidder.toLowerCase(), wallet3Address, "new cryptoPunkBid.bidder")
-		expectEqual(newCryptoPunkBid.value, newPrice.toString(), "new cryptoPunkBid.value")
-		// todo ошибка: на протоколе 2 активных панк-бида, хотя д б 1,
-		//  т к в контракте не может быть больше 1 активного панка-бида
-		//  только один из них реализуем - у которотого есть соответствие в контракте, остальные д б удалены/отменены
-		// previous punk bid is deleted, because it was replaced in punk contract by new punk bid
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count after new bid")
-		})
+		await createPunkMarketBid(wallet3Address, newPrice, web33, cryptoPunks3)
+
+		await checkApiRaribleBidExists(wallet3Address)
 	}, 30000)
 
-	test("test bid by punk market and transfer", async () => {
+	test("test bid by punk market and transfer for free from the owner", async () => {
 		const price = 8
-		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: price})
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
-		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count")
-		})
+		await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
 		await sdk1.nft.transfer(ASSET_TYPE_CRYPTO_PUNK, toAddress(wallet2Address))
-		const cryptoPunkCancelledBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkCancelledBid.hasBid, false, "punk bid.hasBid after transferring")
-		// todo ошибка: punk бид д б удален, т к в контракте нет его соответствия.
-		//  его невозможно ни реализовать ни отменить. стейт патовый
-		//  чинится только созданием заново панк-бида и потом уже отменой (cancelBrokenPunkBid)
-		// punk bid is deleted
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 0, "punk bids count after transfer")
-		})
+		await checkPunkMarketBidNotExists(cryptoPunks2)
+		// Bid is cancelled because the bidder got the punk for free.
+		await checkApiNoMarketBids(wallet2Address)
 	}, 30000)
 
 	test("test punk bid and rarible bid creation", async () => {
-		await cryptoPunks2.methods.enterBidForPunk(punkIndex).send({from: wallet2Address, value: 8})
-		const cryptoPunkBid = await cryptoPunks2.methods.punkBids(punkIndex).call()
-		expectEqual(cryptoPunkBid.hasBid, true, "cryptoPunkBid.hasBid")
-		const price = 10
-		await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, price, sdk1)
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(wallet2Address)
-			expectLength(bids, 1, "punk bids count")
-		})
-		await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getRariblePunkBids(wallet2Address)
-			expectLength(bids, 1, "rarible bids count")
-		})
+		const punkMarketPrice = 8
+		await createPunkMarketBid(wallet2Address, punkMarketPrice, web32, cryptoPunks2)
+
+		const rariblePrice = 10
+		await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, rariblePrice, sdk1)
+
+		await checkApiRaribleBidExists(wallet2Address)
+		await checkApiPunkMarketBidExists(wallet2Address)
 	}, 30000)
 
 	test("test buy using rarible bid with erc20", async () => {
-		await buyUsingRaribleBid(false)
+		await buyUsingRaribleBidWithErc20(false)
 	}, 30000)
 
-	test("test buy using rarible bid with erc20 with existing rarible order", async () => {
-		await buyUsingRaribleBid(true)
+	test("test buy using rarible bid with erc20 with existing rarible sell order", async () => {
+		await buyUsingRaribleBidWithErc20(true)
 	}, 30000)
 
-	test("test buy using rarible bid with erc20 with existing punk order", async () => {
-		await buyUsingRaribleBid(false, true)
+	test("test buy using rarible bid with erc20 with existing punk sell order", async () => {
+		await buyUsingRaribleBidWithErc20(false, true)
 	}, 30000)
 
-	async function buyUsingRaribleBid(
-		withExistingRaribleOrder: boolean,
-		withExistingPunkOrder: boolean = false
+	async function buyUsingRaribleBidWithErc20(
+		withExistingRaribleSellOrder: boolean,
+		withExistingPunkMarketSellOrder: boolean = false
 	) {
-		if (withExistingRaribleOrder && withExistingPunkOrder) {
+		if (withExistingRaribleSellOrder && withExistingPunkMarketSellOrder) {
 			throw new Error("check supports case with either rarible or punk order")
 		}
-		if (withExistingRaribleOrder) {
-			const price = 10
-			await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, price, sdk1)
+		if (withExistingRaribleSellOrder) {
+			const rariblePrice = 10
+			await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ERC20, rariblePrice, sdk1)
 		}
-		if (withExistingPunkOrder) {
+		if (withExistingPunkMarketSellOrder) {
 			const minPrice = 28
-			await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({from: wallet1Address})
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getPunkMarketSellOrders(wallet1Address)
-				expectLength(orders, 1, "punk order before bid")
-			})
+			await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
 		}
+
 		const price = 24
-		const createdBid: RaribleV2Order = await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, price, sdk1)
-		let bid = await retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getRariblePunkBids(wallet2Address)
-			expectLength(bids, 1, "rarible bids count")
-			return bids[0]
-		})
-		expectEqual(bid.maker, createdBid.maker, "bid.maker")
-		expectEqual(bid.make.assetType.assetClass, createdBid.make.assetType.assetClass, "bid.make.assetType")
-		expectEqual(bid.make.valueDecimal, createdBid.make.valueDecimal, "bid.make.valueDecimal")
-		expectEqual(bid.take.assetType.assetClass, createdBid.take.assetType.assetClass, "bid.take.assetType")
+		const bid = await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, price, sdk2)
 		await runLogging(
 			"fill order",
 			sdk1.order.fill({
@@ -633,153 +498,71 @@ describe("crypto punks test", function () {
 		)
 		await verifyErc20Balance(erc20, wallet1Address, price)
 		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
-		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
+		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
 		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
-		if (withExistingRaribleOrder) {
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkSellOrders(wallet1Address)
-				expectLength(orders, 0, "rarible order after accepting bid")
-			})
-			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
-			// ордера он опять активный, хотя нереализуем
-			// (т к при accept bid идет transfer и записывается Offer(isForSale=false))
-			// transfer punk back and check that there is still no rarible order
-			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkSellOrders(wallet1Address)
-				expectLength(orders, 0, "rarible orders count after accepting bid")
-			})
-			// // это подтверждение, что ордер нереализуем (панк д б у wallet1)
-			// const order = await retry(RETRY_ATTEMPTS, async () => {
-			// 	const orders = await getRariblePunkOrders(sdk1, wallet1Address)
-			// 	expectLength(orders, 1, "rarible order after accepting bid")
-			// 	return orders[0]
-			// })
-			// try {
-			// 	await sdk2.order.fill({
-			// 		order: order,
-			// 		amount: 1,
-			// 	})
-			// } catch (e) {
-			// 	printLog(`order.fill failed with error: ${e}`)
-			// 	throw new Error(`order.fill failed with error: ${e}`)
-			// }
-			// await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
+		if (withExistingRaribleSellOrder) {
+			// Punk was sold via accepting bid => the sell order must be cancelled.
+			await checkApiNoRaribleSellOrders()
 		}
-		if (withExistingPunkOrder) {
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getPunkMarketSellOrders(wallet1Address)
-				expectLength(orders, 0, "punk order after accepting bid")
-			})
-			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
-			// ордера он опять активный, хотя нереализуем
-			// (т к при accept bid идет transfer и записывается Offer(isForSale=false))
-			// transfer punk back and check that there is still no punk order
-			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
-			// todo тут тоже ошибка. он inactive, значит при получении панка назад ордер д б active,
-			//  но он все равно inactive
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getPunkMarketSellOrders(wallet1Address)
-				expectLength(orders, 1, "punk orders count after transferring back")
-			})
+		if (withExistingPunkMarketSellOrder) {
+			// Punk was sold => punk market sell order must be cancelled.
+			await checkApiNoMarketSellOrders()
 		}
 	}
 
 	test("test buy using bid by punk market", async () => {
-		await buyUsingBidByCryptoPunkMarket(false)
+		await buyUsingBidByPunkMarket(false)
 	}, 30000)
 
 	test("test buy using bid by punk market with existing rarible order", async () => {
-		await buyUsingBidByCryptoPunkMarket(true)
+		await buyUsingBidByPunkMarket(true)
 	}, 30000)
 
 	test("test buy using bid by punk market with existing punk order", async () => {
-		await buyUsingBidByCryptoPunkMarket(false, true)
+		await buyUsingBidByPunkMarket(false, true)
 	}, 30000)
 
-	async function buyUsingBidByCryptoPunkMarket(
-		withExistingRaribleOrder: boolean,
-		withExistingPunkOrder: boolean = false
+	async function buyUsingBidByPunkMarket(
+		withExistingRaribleSellOrder: boolean,
+		withExistingPunkMarketSellOrder: boolean = false
 	) {
-		if (withExistingRaribleOrder && withExistingPunkOrder) {
+		if (withExistingRaribleSellOrder && withExistingPunkMarketSellOrder) {
 			throw new Error("check supports case with either rarible or punk order")
 		}
-		if (withExistingRaribleOrder) {
+
+		const balanceBefore1 = await web31.eth.getBalance(wallet1Address)
+		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
+		if (withExistingRaribleSellOrder) {
 			const price = 10
 			await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ETH, price, sdk1)
 		}
-		if (withExistingPunkOrder) {
-			const minPrice = 28
-			await cryptoPunks1.methods.offerPunkForSale(punkIndex, minPrice).send({from: wallet1Address})
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getPunkMarketSellOrders(wallet1Address)
-				expectLength(orders, 1, "punk order before bid")
-			})
+		if (withExistingPunkMarketSellOrder) {
+			const minPrice = 28 // TODO[punk]: rename to just sellPrice
+			await createPunkMarketSellOrder(wallet1Address, minPrice, cryptoPunks1)
 		}
+
 		const price = 5
-		const punkMarketBid = await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
-		await runLogging(
-			"fill order",
-			sdk1.order.fill({
-				order: punkMarketBid,
-				amount: 1,
-				infinite: true,
-			})
-		)
+		const bid = await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
+		await fillOrder(bid, sdk1)
+
+		await checkPunkMarketBidNotExists(cryptoPunks2)
 		await checkApiNoMarketBids(wallet2Address)
 
 		await withdrawEth(web31, cryptoPunks1, wallet1Address, price)
+		await verifyEthBalance(web31, toAddress(wallet1Address), toBn(balanceBefore1).plus(price).toString())
+		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
 		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
 
-		if (withExistingRaribleOrder) {
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkSellOrders(wallet1Address)
-				expectLength(orders, 0, "rarible order after accepting bid")
-			})
-			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
-			// ордера он опять активный, хотя нереализуем (т к при accept bid записывается Offer(isForSale=false)
-			// transfer punk back and check that there is still no rarible order
-			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getRariblePunkSellOrders(wallet1Address)
-				expectLength(orders, 0, "rarible orders count after accepting bid")
-			})
-			// // это подтверждение, что ордер нереализуем
-			// const order = await retry(RETRY_ATTEMPTS, async () => {
-			// 	const orders = await getRariblePunkOrders(sdk1, wallet1Address)
-			// 	expectLength(orders, 1, "rarible order after accepting bid")
-			// 	return orders[0]
-			// })
-			// try {
-			// 	await sdk2.order.fill({
-			// 		order: order,
-			// 		amount: 1,
-			// 	})
-			// } catch (e) {
-			// 	printLog(`order.fill failed with error: ${e}`)
-			// 	throw new Error(`order.fill failed with error: ${e}`)
-			// }
-			// await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
+		if (withExistingRaribleSellOrder) {
+			// Sell order must be cancelled because the punk was sold via 'accept bid'
+			await checkApiNoRaribleSellOrders()
 		}
-		if (withExistingPunkOrder) {
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getPunkMarketSellOrders(wallet1Address)
-				expectLength(orders, 0, "punk order after accepting bid")
-			})
-			// todo error: при accept bid sell-ордер стал со статусом inactive. т е после возвращения панка владельцу
-			// ордера он опять активный, хотя нереализуем (т к при accept bid записывается Offer(isForSale=false)
-			// transfer punk back and check that there is still no punk order
-			await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
-			// todo тут тоже ошибка. он inactive, значит при получении панка назад ордер д б active,
-			//  но он все равно inactive
-			await retry(RETRY_ATTEMPTS, async () => {
-				const orders = await getPunkMarketSellOrders(wallet1Address)
-				expectLength(orders, 1, "punk orders count after transferring back")
-			})
+		if (withExistingPunkMarketSellOrder) {
+			await checkApiNoMarketSellOrders()
 		}
 	}
 })
