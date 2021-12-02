@@ -6,7 +6,6 @@ import {cryptoPunksAddress} from "../contracts/crypto-punks"
 import {awaitNoOwnership} from "../common/await-no-ownership"
 import {printLog} from "./util"
 import {punkIndex} from "./crypto-punks"
-import {apiSdk} from "./common-eth"
 
 /**
  * Returns punk to [targetOwner] from [possibleOwner]

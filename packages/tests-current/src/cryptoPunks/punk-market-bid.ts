@@ -94,6 +94,7 @@ export async function cancelBidsInPunkMarket(maker: string, contract: Contract, 
 			throw new Error(message)
 		}
 		printLog(message)
+		return
 	}
 	await runLogging(
 		`Cancelling raw bid from ${bidder}`,

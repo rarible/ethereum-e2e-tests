@@ -10,6 +10,7 @@ import {
 	ORDER_TYPE_RARIBLE_V2,
 } from "./crypto-punks"
 import {checkApiNoRaribleBids, checkBidFields, getBidsForPunkByType} from "./common-bid"
+import {getPunkMarketBids} from "./punk-market-bid"
 
 /**
  * Creates RaribleV2 punk bid.
@@ -62,9 +63,12 @@ export async function cancelRaribleBids(
 	await checkApiNoRaribleBids()
 }
 
+/**
+ * Ensure the API returns Rarible punk bid order.
+ */
 export async function checkApiRaribleBidExists(maker: string, price: number) {
 	await retry(RETRY_ATTEMPTS, async () => {
-		const bids = await getRariblePunkBids(maker)
+		const bids = await getPunkMarketBids(maker)
 		expectLength(bids, 1, `bid from ${maker}`)
 		let bid = bids[0]
 		expectEqual(bid.make.value, price.toString(), "bid price")

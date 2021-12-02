@@ -35,7 +35,12 @@ import {
 	createPunkMarketSellOrder,
 } from "./cryptoPunks/punk-market-sell"
 import {cancelRaribleBids, checkApiRaribleBidExists, createRaribleBidOrder} from "./cryptoPunks/rarible-bid"
-import {cancelRaribleSellOrders, checkApiNoRaribleSellOrders, createRaribleSellOrder} from "./cryptoPunks/rarible-sell"
+import {
+	cancelRaribleSellOrders,
+	checkApiNoRaribleSellOrders,
+	checkApiRaribleSellOrderExists,
+	createRaribleSellOrder,
+} from "./cryptoPunks/rarible-sell"
 import {withdrawEth} from "./cryptoPunks/common-eth"
 import {transferPunkBackToInitialOwner} from "./cryptoPunks/common-test"
 import {fillOrder} from "./cryptoPunks/common-fill"
@@ -315,8 +320,8 @@ describe("crypto punks test", function () {
 			e2eConfig.transferProxies.cryptoPunks.toLowerCase()
 		)
 
-		// Punk market order must be deleted because the sell approval replaces the Offer
-		await checkApiPunkMarketSellOrderExists(wallet1Address, e2eConfig.transferProxies.cryptoPunks.toLowerCase())
+		await checkApiRaribleSellOrderExists(wallet1Address, rariblePrice)
+		await checkApiNoMarketSellOrders()
 	}, 30000)
 
 	test("test cancel rarible sell order", async () => {
