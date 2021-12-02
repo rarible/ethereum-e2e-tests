@@ -68,10 +68,10 @@ export async function cancelRaribleBids(
  */
 export async function checkApiRaribleBidExists(maker: string, price: number) {
 	await retry(RETRY_ATTEMPTS, async () => {
-		const bids = await getPunkMarketBids(maker)
-		expectLength(bids, 1, `bid from ${maker}`)
+		const bids = await getRariblePunkBids(maker)
+		expectLength(bids, 1, `Rarible bid from ${maker}`)
 		let bid = bids[0]
-		expectEqual(bid.make.value, price.toString(), "bid price")
+		expectEqual(bid.make.value, price.toString(), "API Rarible bid price")
 	})
 }
 

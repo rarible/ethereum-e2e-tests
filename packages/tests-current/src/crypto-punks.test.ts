@@ -415,7 +415,7 @@ describe("crypto punks test", function () {
 		await checkApiRaribleBidExists(wallet2Address, newPrice)
 	}, 30000)
 
-	test("test update bid by punk market using api", async () => {
+	test("test update bid by punk market using SDK", async () => {
 		const price = 8
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 		const bid = await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
@@ -431,7 +431,7 @@ describe("crypto punks test", function () {
 		)
 
 		await checkPunkMarketBidExists(cryptoPunks2, wallet2Address, newPrice)
-		await checkApiRaribleBidExists(wallet2Address, newPrice)
+		await checkApiPunkMarketBidExists(wallet2Address, newPrice)
 
 		await withdrawEth(web32, cryptoPunks2, wallet2Address, price)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
@@ -444,7 +444,7 @@ describe("crypto punks test", function () {
 		const newPrice = 10
 		await createPunkMarketBid(wallet3Address, newPrice, web33, cryptoPunks3)
 
-		await checkApiRaribleBidExists(wallet3Address, newPrice)
+		await checkApiPunkMarketBidExists(wallet3Address, newPrice)
 	}, 30000)
 
 	test("test bid by punk market and transfer for free from the owner", async () => {
@@ -461,8 +461,9 @@ describe("crypto punks test", function () {
 		await createPunkMarketBid(wallet2Address, punkMarketPrice, web32, cryptoPunks2)
 
 		const rariblePrice = 10
-		await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, rariblePrice, sdk1)
+		await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, rariblePrice, sdk2)
 
+		// Both bids exist because they are in different currencies.
 		await checkApiPunkMarketBidExists(wallet2Address, punkMarketPrice)
 		await checkApiRaribleBidExists(wallet2Address, rariblePrice)
 	}, 30000)

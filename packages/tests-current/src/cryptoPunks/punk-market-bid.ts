@@ -14,7 +14,6 @@ import {
 	ZERO_ADDRESS,
 } from "./crypto-punks"
 import {checkBidFields, getBidsForPunkByType} from "./common-bid"
-import {getPunkMarketSellOrders} from "./punk-market-sell"
 
 /**
  * Creates bid from [maker] in the punk market.
@@ -27,8 +26,8 @@ export async function createPunkMarketBid(
 ): Promise<CryptoPunkOrder> {
 	const balanceBefore = await web3.eth.getBalance(maker)
 	await contract.methods.enterBidForPunk(punkIndex).send({from: maker, value: price})
-	await verifyEthBalance(web3, toAddress(maker), toBn(balanceBefore).minus(price).toString())
 	await checkPunkMarketBidExists(contract, maker, price)
+	await verifyEthBalance(web3, toAddress(maker), toBn(balanceBefore).minus(price).toString())
 	const bid = await retry(RETRY_ATTEMPTS, async () => {
 		const cryptoPunkBids = await getPunkMarketBids(maker)
 		expectLength(cryptoPunkBids, 1, "created punk market bids")
@@ -53,7 +52,7 @@ export async function checkApiPunkMarketBidExists(maker: string, price: number):
 		const bids = await getPunkMarketBids(maker)
 		expectLength(bids, 1, `bid orders from ${maker}`)
 		let bid = bids[0]
-		expectEqual(bid.make.value, price.toString(), "API bid price")
+		expectEqual(bid.make.value, price.toString(), "API punk market bid price")
 		return bid
 	})
 }
