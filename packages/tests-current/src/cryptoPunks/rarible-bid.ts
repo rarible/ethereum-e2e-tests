@@ -10,7 +10,6 @@ import {
 	ORDER_TYPE_RARIBLE_V2,
 } from "./crypto-punks"
 import {checkApiNoRaribleBids, checkBidFields, getBidsForPunkByType} from "./common-bid"
-import {getPunkMarketBids} from "./punk-market-bid"
 
 /**
  * Creates RaribleV2 punk bid.
@@ -30,7 +29,7 @@ export async function createRaribleBidOrder(
 			maker: toAddress(maker),
 			originFees: [],
 			payouts: [],
-			price: 10,
+			price: price,
 			takeAssetType: ASSET_TYPE_CRYPTO_PUNK,
 		}).then((order) => order as RaribleV2Order)
 	)
@@ -47,7 +46,7 @@ export async function cancelRaribleBids(
 	sdk: RaribleSdk,
 	maker: string
 ) {
-	const bids = await getRariblePunkBids(maker)
+	const bids = await getApiRariblePunkBids(maker)
 	if (bids.length === 0) {
 		printLog(`No Rarible bids to cancel from ${maker}`)
 		return
@@ -68,7 +67,7 @@ export async function cancelRaribleBids(
  */
 export async function checkApiRaribleBidExists(maker: string, price: number) {
 	await retry(RETRY_ATTEMPTS, async () => {
-		const bids = await getRariblePunkBids(maker)
+		const bids = await getApiRariblePunkBids(maker)
 		expectLength(bids, 1, `Rarible bid from ${maker}`)
 		let bid = bids[0]
 		expectEqual(bid.make.value, price.toString(), "API Rarible bid price")
@@ -78,7 +77,7 @@ export async function checkApiRaribleBidExists(maker: string, price: number) {
 /**
  * Request RaribleV2 bids from API.
  */
-export async function getRariblePunkBids(maker: string | undefined): Promise<RaribleV2Order[]> {
+export async function getApiRariblePunkBids(maker: string | undefined): Promise<RaribleV2Order[]> {
 	return await runLogging(
 		`request RaribleV2 punk bids from API from ${maker}`,
 		getBidsForPunkByType<RaribleV2Order>(maker, ORDER_TYPE_RARIBLE_V2)

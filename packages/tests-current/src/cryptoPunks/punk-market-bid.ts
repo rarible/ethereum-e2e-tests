@@ -29,9 +29,9 @@ export async function createPunkMarketBid(
 	await checkPunkMarketBidExists(contract, maker, price)
 	await verifyEthBalance(web3, toAddress(maker), toBn(balanceBefore).minus(price).toString())
 	const bid = await retry(RETRY_ATTEMPTS, async () => {
-		const cryptoPunkBids = await getPunkMarketBids(maker)
-		expectLength(cryptoPunkBids, 1, "created punk market bids")
-		return cryptoPunkBids[0]
+		const bids = await getApiPunkMarketBids(maker)
+		expectLength(bids, 1, "created punk market bids")
+		return bids[0]
 	})
 	printLog(`Created CRYPTO_PUNK bid: ${JSON.stringify(bid)}`)
 	checkBidFields(bid, maker, ASSET_TYPE_ETH, price)
@@ -49,7 +49,7 @@ export async function checkPunkMarketBidExists(contract: Contract, maker: string
 
 export async function checkApiPunkMarketBidExists(maker: string, price: number): Promise<CryptoPunkOrder> {
 	return await retry(RETRY_ATTEMPTS, async () => {
-		const bids = await getPunkMarketBids(maker)
+		const bids = await getApiPunkMarketBids(maker)
 		expectLength(bids, 1, `bid orders from ${maker}`)
 		let bid = bids[0]
 		expectEqual(bid.make.value, price.toString(), "API punk market bid price")
@@ -71,7 +71,7 @@ export async function checkApiNoMarketBids(maker: string) {
 	await runLogging(
 		`ensure no punk market bids from ${maker} in API`,
 		retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getPunkMarketBids(maker)
+			const bids = await getApiPunkMarketBids(maker)
 			expectLength(bids, 0, "punk bids count")
 		})
 	)
@@ -105,7 +105,7 @@ export async function cancelBidsInPunkMarket(maker: string, contract: Contract, 
 /**
  * Request CRYPTO_PUNK bids from API.
  */
-export async function getPunkMarketBids(maker: string | undefined): Promise<CryptoPunkOrder[]> {
+export async function getApiPunkMarketBids(maker: string | undefined): Promise<CryptoPunkOrder[]> {
 	return await runLogging(
 		`request CRYPTO_PUNK bids from API from ${maker}`,
 		getBidsForPunkByType<CryptoPunkOrder>(maker, ORDER_TYPE_CRYPTO_PUNK)

@@ -1,12 +1,12 @@
-import {Asset, EthAssetType, OrderStatus, Platform, RaribleV2Order} from "@rarible/ethereum-api-client"
+import {EthAssetType, Platform, RaribleV2Order} from "@rarible/ethereum-api-client"
 import {CryptoPunkOrder, Order} from "@rarible/ethereum-api-client/build/models/Order"
-import {CryptoPunksAssetType, Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
+import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {expectEqual, expectEqualStrict, expectLength} from "../common/expect-equal"
 import {retry} from "../common/retry"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
 import {ASSET_TYPE_CRYPTO_PUNK, punkIndex} from "./crypto-punks"
 import {RETRY_ATTEMPTS, runLogging} from "./util"
-import {getRariblePunkBids} from "./rarible-bid"
+import {getApiRariblePunkBids} from "./rarible-bid"
 import {apiSdk} from "./common-eth"
 
 export function checkBidFields(
@@ -31,14 +31,14 @@ export async function checkApiNoRaribleBids() {
 	await runLogging(
 		"ensure no rarible bids in API",
 		retry(RETRY_ATTEMPTS, async () => {
-			const bids = await getRariblePunkBids(undefined)
+			const bids = await getApiRariblePunkBids(undefined)
 			expectLength(bids, 0, "unexpected Rarible bids")
 		})
 	)
 }
 
 /**
- * @see getRariblePunkBids
+ * @see getApiRariblePunkBids
  * @see getPunkMarketBids
  */
 export async function getBidsForPunkByType<T extends Order>(
