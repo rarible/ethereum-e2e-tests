@@ -95,8 +95,10 @@ export async function cancelBidsInPunkMarket(maker: string, contract: Contract, 
 		}
 		printLog(message)
 	}
-	printLog(`Found bid in punk market from ${bidder}, cancelling it`)
-	await contract.methods.withdrawBidForPunk(punkIndex).send({from: bidder})
+	await runLogging(
+		`Cancelling raw bid from ${bidder}`,
+		contract.methods.withdrawBidForPunk(punkIndex).send({ from: maker })
+	)
 	await checkApiNoMarketBids(maker)
 }
 

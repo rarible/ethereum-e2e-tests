@@ -1,19 +1,23 @@
-import { NftOwnershipControllerApi, NftOwnership } from "@rarible/ethereum-api-client"
-import { getOwnershipId } from "./get-ownership-id"
-import { retry } from "./retry"
-import { expectEqual } from "./expect-equal"
+import {NftOwnership} from "@rarible/ethereum-api-client"
+import {RETRY_ATTEMPTS} from "../cryptoPunks/util"
+import {apiSdk} from "../cryptoPunks/common-eth"
+import {getOwnershipId} from "./get-ownership-id"
+import {retry} from "./retry"
+import {expectEqual} from "./expect-equal"
 
 export async function awaitOwnershipValueToBe(
-	api: NftOwnershipControllerApi,
 	token: string,
 	tokenId: number,
 	owner: string,
 	value: string | number
 ) {
 	const ownershipId = getOwnershipId(token, tokenId, owner)
-	await retry(3, async () => {
-		const ownershipResponse = await api.getNftOwnershipByIdRaw({ ownershipId })
-		expectEqual(ownershipResponse.status, 200, "ownership status")
-		expectEqual((ownershipResponse.value as NftOwnership).value, `${value}`, "ownership value")
+	await retry(RETRY_ATTEMPTS, async () => {
+		const ownershipResponse = await apiSdk.apis.nftOwnership.getNftOwnershipByIdRaw({ ownershipId })
+		expectEqual(ownershipResponse.status, 200, `ownership status of ${ownershipId}`)
+		expectEqual(
+			(ownershipResponse.value as NftOwnership).value, `${value}`,
+			`ownership value of ${ownershipId}`
+		)
 	})
 }

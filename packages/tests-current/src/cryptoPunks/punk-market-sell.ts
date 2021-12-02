@@ -22,7 +22,7 @@ export async function createPunkMarketSellOrder(
 	if (onlySellTo === ZERO_ADDRESS) {
 		await contract.methods.offerPunkForSale(punkIndex, price).send({from: maker})
 	} else {
-		await contract.methods.offerPunkForSaleToAddress(punkIndex, price, onlySellTo)
+		await contract.methods.offerPunkForSaleToAddress(punkIndex, price, onlySellTo).send({from: maker})
 	}
 	await checkPunkMarketForSale(contract, maker, price, onlySellTo)
 	let order = await retry(RETRY_ATTEMPTS, async () => {
@@ -46,7 +46,7 @@ export async function checkPunkMarketForSale(
 	expectEqual(rawSell.seller.toLowerCase(), maker, "rawSell.seller")
 	expectEqual(rawSell.minValue, price.toString(), "rawSell.minValue")
 	expectEqual(rawSell.punkIndex, punkIndex.toString(), "rawSell.punkIndex")
-	expectEqual(rawSell.onlySellTo, onlySellTo, "rawSell.onlySellTo")
+	expectEqual(rawSell.onlySellTo.toLowerCase(), onlySellTo, "rawSell.onlySellTo")
 }
 
 export async function checkPunkMarketNotForSale(contract: Contract) {
@@ -64,11 +64,16 @@ export async function getPunkMarketSellOrders(maker: string | undefined): Promis
 	)
 }
 
-export async function checkApiPunkMarketSellOrderExists(maker: string): Promise<CryptoPunkOrder> {
+export async function checkApiPunkMarketSellOrderExists(
+	maker: string,
+	taker: string | undefined = undefined
+): Promise<CryptoPunkOrder> {
 	return await retry(RETRY_ATTEMPTS, async () => {
 		const sellOrders = await getPunkMarketSellOrders(maker)
 		expectLength(sellOrders, 1, `sell orders from ${maker}`)
-		return sellOrders[0]
+		let sellOrder = sellOrders[0]
+		expectEqual(sellOrder.taker, taker, "sell order taker")
+		return sellOrder
 	})
 }
 

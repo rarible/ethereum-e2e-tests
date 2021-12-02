@@ -3,7 +3,7 @@ import {CryptoPunksAssetType} from "@rarible/ethereum-api-client/build/models"
 import {toAddress} from "@rarible/types"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
 
-export const punkIndex = 9
+export const punkIndex = 7
 export const ORDER_TYPE_CRYPTO_PUNK = "CRYPTO_PUNK"
 export const ORDER_TYPE_RARIBLE_V2 = "RARIBLE_V2"
 export const ASSET_TYPE_ETH: EthAssetType = {

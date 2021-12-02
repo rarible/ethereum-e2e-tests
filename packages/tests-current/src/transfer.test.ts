@@ -36,8 +36,8 @@ describe("transfer test", function () {
 			toAddress(wallet2Address)
 		)
 
-		await awaitNoOwnership(nftOwnership, erc721Address, tokenId, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnership, erc721Address, tokenId, wallet2Address, 1)
+		await awaitNoOwnership(erc721Address, tokenId, wallet1Address)
+		await awaitOwnershipValueToBe(erc721Address, tokenId, wallet2Address, 1)
 	}, 30000)
 
 	test("test-erc1155 transfer", async () => {
@@ -57,7 +57,7 @@ describe("transfer test", function () {
 			toBigNumber("60"),
 		)
 
-		await awaitOwnershipValueToBe(nftOwnership, erc1155Address, tokenId, wallet1Address, 40)
-		await awaitOwnershipValueToBe(nftOwnership, erc1155Address, tokenId, wallet2Address, 60)
+		await awaitOwnershipValueToBe(erc1155Address, tokenId, wallet1Address, 40)
+		await awaitOwnershipValueToBe(erc1155Address, tokenId, wallet2Address, 60)
 	})
 })

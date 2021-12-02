@@ -58,8 +58,6 @@ describe("crypto punks test", function () {
 	const wallet3Address = wallet3.getAddressString()
 	const sdk3 = createRaribleSdk(new Web3Ethereum({web3: web33}), "e2e")
 
-	const nftOwnershipApi = sdk1.apis.nftOwnership
-
 	let cryptoPunks1: Contract
 	let cryptoPunks2: Contract
 	let cryptoPunks3: Contract
@@ -95,7 +93,7 @@ describe("crypto punks test", function () {
 	}, 30000)
 
 	afterEach(async () => {
-		await cleanupTestEnvironment()
+		// await cleanupTestEnvironment()
 	}, 30000)
 
 	async function cleanupTestEnvironment() {
@@ -124,9 +122,9 @@ describe("crypto punks test", function () {
 
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet1Address)
 
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address, 1)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet3Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet1Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet2Address)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet3Address)
 
 		await cryptoPunks1.methods.withdraw().send({from: wallet1Address})
 		await cryptoPunks2.methods.withdraw().send({from: wallet2Address})
@@ -140,8 +138,8 @@ describe("crypto punks test", function () {
 	test("test transfer", async () => {
 		await sdk1.nft.transfer(ASSET_TYPE_CRYPTO_PUNK, toAddress(wallet2Address))
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 	}, 30000)
 
 	test("test failed to transfer by not an owner", async () => {
@@ -156,8 +154,8 @@ describe("crypto punks test", function () {
 	test("test transfer punk using punk market", async () => {
 		await cryptoPunks1.methods.transferPunk(toAddress(wallet2Address), punkIndex).send({from: wallet1Address})
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 	}, 30000)
 
 	test("test sell for eth by rarible order", async () => {
@@ -216,8 +214,8 @@ describe("crypto punks test", function () {
 		}
 
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 	}
 
 	test("test sell for erc20 by rarible order", async () => {
@@ -227,8 +225,8 @@ describe("crypto punks test", function () {
 		await verifyErc20Balance(erc20, wallet1Address, price)
 		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 	}, 30000)
 
 	test("test sell by punk market", async () => {
@@ -276,19 +274,19 @@ describe("crypto punks test", function () {
 		}
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(sellPrice).toString())
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 	}
 
 	test("test sell to specific address by punk market", async () => {
 		const price = 7
-		const sellOrder = await createPunkMarketSellOrder(wallet1Address, price, cryptoPunks1, wallet1Address)
+		const sellOrder = await createPunkMarketSellOrder(wallet1Address, price, cryptoPunks1, wallet2Address)
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 		await fillOrder(sellOrder, sdk2)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 	}, 30000)
 
 	test("test cancel rarible order because punk market sell order is created", async () => {
@@ -313,25 +311,30 @@ describe("crypto punks test", function () {
 		await checkPunkMarketForSale(
 			cryptoPunks1,
 			wallet1Address,
-			rariblePrice,
+			0,
 			e2eConfig.transferProxies.cryptoPunks.toLowerCase()
 		)
 
 		// Punk market order must be deleted because the sell approval replaces the Offer
-		await checkApiNoMarketSellOrders()
+		await checkApiPunkMarketSellOrderExists(wallet1Address, e2eConfig.transferProxies.cryptoPunks.toLowerCase())
 	}, 30000)
 
 	test("test cancel rarible sell order", async () => {
 		const price = 24
 		let order = await createRaribleSellOrder(wallet1Address, ASSET_TYPE_ERC20, price, sdk1)
-		await sdk1.order.cancel(order)
-		await checkApiNoRaribleSellOrders()
-
-		// Punk market sell order for approval still exists.
 		await checkPunkMarketForSale(
 			cryptoPunks1,
 			wallet1Address,
-			price,
+			0,
+			e2eConfig.transferProxies.cryptoPunks.toLowerCase()
+		)
+		await sdk1.order.cancel(order)
+		await checkApiNoRaribleSellOrders()
+		// Punk market sell order approval still exists.
+		await checkPunkMarketForSale(
+			cryptoPunks1,
+			wallet1Address,
+			0,
 			e2eConfig.transferProxies.cryptoPunks.toLowerCase()
 		)
 	}, 30000)
@@ -493,8 +496,8 @@ describe("crypto punks test", function () {
 		await verifyErc20Balance(erc20, wallet1Address, price)
 		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 		if (withExistingRaribleSellOrder) {
 			// Punk was sold via accepting bid => the sell order must be cancelled.
 			await checkApiNoRaribleSellOrders()
@@ -548,8 +551,8 @@ describe("crypto punks test", function () {
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
-		await awaitNoOwnership(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet1Address)
-		await awaitOwnershipValueToBe(nftOwnershipApi, cryptoPunksAddress, punkIndex, wallet2Address, 1)
+		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
+		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
 
 		if (withExistingRaribleSellOrder) {
 			// Sell order must be cancelled because the punk was sold via 'accept bid'

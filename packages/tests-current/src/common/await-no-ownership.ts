@@ -1,17 +1,17 @@
-import { NftOwnershipControllerApi } from "@rarible/ethereum-api-client"
-import { retry } from "./retry"
-import { getOwnershipId } from "./get-ownership-id"
-import { expectEqual } from "./expect-equal"
+import {RETRY_ATTEMPTS} from "../cryptoPunks/util"
+import {apiSdk} from "../cryptoPunks/common-eth"
+import {retry} from "./retry"
+import {getOwnershipId} from "./get-ownership-id"
+import {expectEqual} from "./expect-equal"
 
 export async function awaitNoOwnership(
-	api: NftOwnershipControllerApi,
 	token: string,
 	tokenId: number,
 	owner: string
 ) {
 	const ownershipId = getOwnershipId(token, tokenId, owner)
-	await retry(3, async () => {
-		const ownershipResponse = await api.getNftOwnershipByIdRaw({ ownershipId })
+	await retry(RETRY_ATTEMPTS, async () => {
+		const ownershipResponse = await apiSdk.apis.nftOwnership.getNftOwnershipByIdRaw({ ownershipId })
 		expectEqual(ownershipResponse.status, 404, "expected Not found ownership. ownership status")
 	})
 }

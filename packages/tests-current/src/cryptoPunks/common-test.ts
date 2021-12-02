@@ -26,11 +26,11 @@ export async function transferPunkBackToInitialOwner(
 	}
 	printLog("transferring back from wallet2 to wallet1")
 	await verifyCryptoPunkOwner(possibleContract, punkIndex, possibleOwner)
-	await awaitOwnershipValueToBe(apiSdk.apis.nftOwnership, cryptoPunksAddress, punkIndex, possibleOwner, 1)
+	await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, possibleOwner, 1)
 
 	await possibleContract.methods.transferPunk(toAddress(targetOwner), punkIndex).send({from: possibleOwner})
 	await verifyCryptoPunkOwner(possibleContract, punkIndex, targetOwner)
-	await awaitNoOwnership(apiSdk.apis.nftOwnership, cryptoPunksAddress, punkIndex, possibleOwner)
-	await awaitOwnershipValueToBe(apiSdk.apis.nftOwnership, cryptoPunksAddress, punkIndex, targetOwner, 1)
+	await awaitNoOwnership(cryptoPunksAddress, punkIndex, possibleOwner)
+	await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, targetOwner, 1)
 	printLog(`punk transferred back from ${possibleOwner} to ${targetOwner}`)
 }
