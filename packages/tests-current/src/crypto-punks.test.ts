@@ -496,11 +496,11 @@ describe("crypto punks test", function () {
 			await createPunkMarketSellOrder(wallet1Address, punkMarketPrice, cryptoPunks1)
 		}
 
-		const price = 24
-		const bid = await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, price, sdk2)
+		const bidPrice = 24
+		const bid = await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, bidPrice, sdk2)
 		await fillOrder(bid, sdk1)
-		await verifyErc20Balance(erc20, wallet1Address, price)
-		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - price)
+		await verifyErc20Balance(erc20, wallet1Address, bidPrice)
+		await verifyErc20Balance(erc20, wallet2Address, initErc20Balance - bidPrice)
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
 		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
