@@ -17,7 +17,7 @@ import {expectEqual} from "./common/expect-equal"
 import {deployTestErc20, erc20Mint} from "./contracts/test-erc20"
 import {verifyErc20Balance} from "./common/verify-erc20-balance"
 import {ASSET_TYPE_CRYPTO_PUNK, ASSET_TYPE_ETH, punkIndex} from "./cryptoPunks/crypto-punks"
-import {printLog, RETRY_ATTEMPTS, runLogging} from "./cryptoPunks/util"
+import {printLog, RETRY_ATTEMPTS, runLogging, TEST_TIMEOUT} from "./cryptoPunks/util"
 import {
 	cancelBidsInPunkMarket,
 	checkApiNoMarketBids,
@@ -95,11 +95,11 @@ describe("crypto punks test", function () {
 
 		await cleanupTestEnvironment()
 		printLog("Finished test init")
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	afterEach(async () => {
 		// await cleanupTestEnvironment()
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	async function cleanupTestEnvironment() {
 		printLog("Started cleaning up test environment")
@@ -145,7 +145,7 @@ describe("crypto punks test", function () {
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
 		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test failed to transfer by not an owner", async () => {
 		await expect(async () => {
@@ -161,19 +161,19 @@ describe("crypto punks test", function () {
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
 		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test sell for eth by rarible order", async () => {
 		await sellForEthByRaribleOrder(false)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test sell for eth by rarible order with existing rarible bid", async () => {
 		await sellForEthByRaribleOrder(true, false)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test sell for eth by rarible order with existing punk bid", async () => {
 		await sellForEthByRaribleOrder(false, true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	async function sellForEthByRaribleOrder(
 		withExistingRaribleBid: boolean,
@@ -232,19 +232,19 @@ describe("crypto punks test", function () {
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
 		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test sell by punk market", async () => {
 		await sellByPunkMarket(false)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test sell by punk market with existing rarible bid", async () => {
 		await sellByPunkMarket(true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test sell by punk market with existing punk bid", async () => {
 		await sellByPunkMarket(false, true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	async function sellByPunkMarket(
 		withExistingRaribleBid: boolean,
@@ -292,7 +292,7 @@ describe("crypto punks test", function () {
 		await verifyCryptoPunkOwner(cryptoPunks1, punkIndex, wallet2Address)
 		await awaitNoOwnership(cryptoPunksAddress, punkIndex, wallet1Address)
 		await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, wallet2Address, 1)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test cancel rarible order because punk market sell order is created", async () => {
 		const rariblePrice = 7
@@ -303,7 +303,7 @@ describe("crypto punks test", function () {
 
 		// Rarible sell order must be deleted because the approval for Rarible order is removed.
 		await checkApiNoRaribleSellOrders()
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 
 	test("test replace punk market sell order with rarible sell order approval", async () => {
@@ -322,7 +322,7 @@ describe("crypto punks test", function () {
 
 		await checkApiRaribleSellOrderExists(wallet1Address, rariblePrice)
 		await checkApiNoMarketSellOrders()
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test cancel rarible sell order", async () => {
 		const price = 24
@@ -342,13 +342,13 @@ describe("crypto punks test", function () {
 			0,
 			e2eConfig.transferProxies.cryptoPunks.toLowerCase()
 		)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test cancel sell order by punk market", async () => {
 		const price = 8
 		await createPunkMarketSellOrder(wallet1Address, price, cryptoPunks1)
 		await cancelSellOrderInPunkMarket(wallet1Address, cryptoPunks1, true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test update sell order by punk market using api", async () => {
 		const price = 8
@@ -367,14 +367,14 @@ describe("crypto punks test", function () {
 			let updatedSellOrder = await checkApiPunkMarketSellOrderExists(wallet1Address)
 			expectEqual(updatedSellOrder.take.value, newPrice.toString(), "updated sell price")
 		})
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test punk market sell order and transfer for free", async () => {
 		await createPunkMarketSellOrder(wallet1Address, 8, cryptoPunks1)
 		await sdk1.nft.transfer(ASSET_TYPE_CRYPTO_PUNK, toAddress(wallet2Address))
 		await checkPunkMarketNotForSale(cryptoPunks1)
 		await checkApiNoMarketSellOrders()
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test cancel bid by punk market", async () => {
 		const price = 8
@@ -385,7 +385,7 @@ describe("crypto punks test", function () {
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
 		await checkPunkMarketBidNotExists(cryptoPunks2)
 		await checkApiNoMarketBids(wallet2Address)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test cancel bid by punk market using api", async () => {
 		const price = 8
@@ -399,7 +399,7 @@ describe("crypto punks test", function () {
 		await checkPunkMarketBidNotExists(cryptoPunks2)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).toString())
 		await checkApiNoMarketBids(wallet2Address)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test update bid by punk market", async () => {
 		const price = 8
@@ -412,8 +412,8 @@ describe("crypto punks test", function () {
 		await cryptoPunks2.methods.withdraw().send({from: wallet2Address})
 
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
-		await checkApiRaribleBidExists(wallet2Address, newPrice)
-	}, 30000)
+		await checkApiPunkMarketBidExists(wallet2Address, newPrice)
+	}, TEST_TIMEOUT)
 
 	test("test update bid by punk market using SDK", async () => {
 		const price = 8
@@ -434,8 +434,8 @@ describe("crypto punks test", function () {
 		await checkApiPunkMarketBidExists(wallet2Address, newPrice)
 
 		await withdrawEth(web32, cryptoPunks2, wallet2Address, price)
-		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
-	}, 30000)
+		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
+	}, TEST_TIMEOUT)
 
 	test("test punk bids from different users", async () => {
 		const price = 8
@@ -445,7 +445,7 @@ describe("crypto punks test", function () {
 		await createPunkMarketBid(wallet3Address, newPrice, web33, cryptoPunks3)
 
 		await checkApiPunkMarketBidExists(wallet3Address, newPrice)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test bid by punk market and transfer for free from the owner", async () => {
 		const price = 8
@@ -454,7 +454,7 @@ describe("crypto punks test", function () {
 		await checkPunkMarketBidNotExists(cryptoPunks2)
 		// Bid is cancelled because the bidder got the punk for free.
 		await checkApiNoMarketBids(wallet2Address)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test punk bid and rarible bid creation", async () => {
 		const punkMarketPrice = 8
@@ -466,19 +466,19 @@ describe("crypto punks test", function () {
 		// Both bids exist because they are in different currencies.
 		await checkApiPunkMarketBidExists(wallet2Address, punkMarketPrice)
 		await checkApiRaribleBidExists(wallet2Address, rariblePrice)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test buy using rarible bid with erc20", async () => {
 		await buyUsingRaribleBidWithErc20(false)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test buy using rarible bid with erc20 with existing rarible sell order", async () => {
 		await buyUsingRaribleBidWithErc20(true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test buy using rarible bid with erc20 with existing punk sell order", async () => {
 		await buyUsingRaribleBidWithErc20(false, true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	async function buyUsingRaribleBidWithErc20(
 		withExistingRaribleSellOrder: boolean,
@@ -516,15 +516,15 @@ describe("crypto punks test", function () {
 
 	test("test buy using bid by punk market", async () => {
 		await buyUsingBidByPunkMarket(false)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test buy using bid by punk market with existing rarible order", async () => {
 		await buyUsingBidByPunkMarket(true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	test("test buy using bid by punk market with existing punk order", async () => {
 		await buyUsingBidByPunkMarket(false, true)
-	}, 30000)
+	}, TEST_TIMEOUT)
 
 	async function buyUsingBidByPunkMarket(
 		withExistingRaribleSellOrder: boolean,

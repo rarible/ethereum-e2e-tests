@@ -1,4 +1,5 @@
 export const RETRY_ATTEMPTS = 8
+export const TEST_TIMEOUT = 30000
 
 function getMessage(message: any): string {
 	let testName = expect.getState().currentTestName
