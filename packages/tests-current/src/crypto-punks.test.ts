@@ -44,6 +44,7 @@ import {
 import {withdrawEth} from "./cryptoPunks/common-eth"
 import {transferPunkTo} from "./cryptoPunks/punk-transfer"
 import {fillOrder} from "./cryptoPunks/common-fill"
+import {checkApiNoRaribleBids} from "./cryptoPunks/common-bid"
 
 describe("crypto punks test", function () {
 
@@ -109,14 +110,17 @@ describe("crypto punks test", function () {
 		await cancelBidsInPunkMarket(wallet1Address, cryptoPunks1)
 		await cancelBidsInPunkMarket(wallet2Address, cryptoPunks2)
 		await cancelBidsInPunkMarket(wallet3Address, cryptoPunks3)
+		await checkApiNoMarketBids()
 
 		await cancelSellOrderInPunkMarket(wallet1Address, cryptoPunks1, false)
 		await cancelSellOrderInPunkMarket(wallet2Address, cryptoPunks2, false)
 		await cancelSellOrderInPunkMarket(wallet3Address, cryptoPunks3, false)
+		await checkApiNoMarketSellOrders()
 
 		await cancelRaribleBids(sdk1, wallet1Address)
 		await cancelRaribleBids(sdk2, wallet2Address)
 		await cancelRaribleBids(sdk3, wallet3Address)
+		await checkApiNoRaribleBids()
 
 		await cancelRaribleSellOrders(sdk1, wallet1Address)
 		await cancelRaribleSellOrders(sdk2, wallet2Address)
@@ -349,6 +353,7 @@ describe("crypto punks test", function () {
 		const price = 8
 		await createPunkMarketSellOrder(wallet1Address, price, cryptoPunks1)
 		await cancelSellOrderInPunkMarket(wallet1Address, cryptoPunks1, true)
+		await checkApiNoMarketSellOrders()
 	}, TEST_TIMEOUT)
 
 	test("test update sell order by punk market using api", async () => {

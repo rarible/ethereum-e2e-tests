@@ -118,5 +118,4 @@ export async function cancelSellOrderInPunkMarket(
 	expectEqual(forSale.seller.toLowerCase(), maker, "seller")
 	printLog(`Found sell order in punk market, cancelling it ${JSON.stringify(forSale)}`)
 	await contract.methods.punkNoLongerForSale(punkIndex).send({from: maker})
-	await checkApiNoMarketSellOrders()
 }

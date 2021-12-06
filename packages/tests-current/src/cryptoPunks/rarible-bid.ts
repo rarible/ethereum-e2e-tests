@@ -59,7 +59,6 @@ export async function cancelRaribleBids(
 			sdk.order.cancel(bid)
 		)
 	}
-	await checkApiNoRaribleBids()
 }
 
 /**

@@ -67,7 +67,7 @@ export async function checkPunkMarketBidNotExists(
 /**
  * Ensure the API does not return any CRYPTO_PUNK bids.
  */
-export async function checkApiNoMarketBids(maker: string) {
+export async function checkApiNoMarketBids(maker: string | undefined = undefined) {
 	await runLogging(
 		`ensure no punk market bids from ${maker} in API`,
 		retry(RETRY_ATTEMPTS, async () => {
@@ -96,7 +96,6 @@ export async function cancelBidsInPunkMarket(maker: string, contract: Contract) 
 		`Cancelling raw bid from ${bidder}`,
 		contract.methods.withdrawBidForPunk(punkIndex).send({ from: maker })
 	)
-	await checkApiNoMarketBids(maker)
 }
 
 /**
