@@ -3,6 +3,7 @@ import {CryptoPunkOrder, Order} from "@rarible/ethereum-api-client/build/models/
 import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {expectEqual, expectEqualStrict} from "../common/expect-equal"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
+import {toBn} from "../common/to-bn"
 import {ASSET_TYPE_CRYPTO_PUNK, punkIndex} from "./crypto-punks"
 import {apiSdk} from "./common-eth"
 
@@ -19,6 +20,7 @@ export function checkSellOrder(
 	expectEqual(order.maker, maker, "order.maker")
 
 	expectEqual(order.taker, taker, "order.taker")
+	expectEqualStrict(toBn(order.take.value), toBn(price), "order take.value")
 	expectEqualStrict(order.take.assetType, takeAssetType, "type of order.take.asset")
 }
 

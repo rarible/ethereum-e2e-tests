@@ -4,6 +4,7 @@ import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {expectEqual, expectEqualStrict, expectLength} from "../common/expect-equal"
 import {retry} from "../common/retry"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
+import {toBn} from "../common/to-bn"
 import {ASSET_TYPE_CRYPTO_PUNK, punkIndex} from "./crypto-punks"
 import {RETRY_ATTEMPTS, runLogging} from "./util"
 import {getApiRariblePunkBids} from "./rarible-bid"
@@ -17,6 +18,7 @@ export function checkBidFields(
 	taker: string | undefined = undefined
 ) {
 	expectEqualStrict(bid.make.assetType, makeAssetType, "type of bid.make.asset")
+	expectEqualStrict(toBn(bid.make.value), toBn(price), "bid make.value")
 	expectEqual(bid.maker, maker, "bid.maker")
 
 	expectEqual(bid.taker, taker, "bid.taker")
