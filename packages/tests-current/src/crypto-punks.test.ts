@@ -444,6 +444,7 @@ describe("crypto punks test", function () {
 		const newPrice = 10
 		await createPunkMarketBid(wallet3Address, newPrice, web33, cryptoPunks3)
 
+		await checkApiNoMarketBids(wallet2Address)
 		await checkApiPunkMarketBidExists(wallet3Address, newPrice)
 	}, TEST_TIMEOUT)
 
