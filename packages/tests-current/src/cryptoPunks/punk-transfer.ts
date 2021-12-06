@@ -19,7 +19,7 @@ export async function transferPunkTo(
 ) {
 	const realOwner = await possibleContract.methods.punkIndexToAddress(punkIndex).call()
 	if (realOwner.toLowerCase() === targetOwner) {
-		printLog(`no need to transfer back, the punk belongs to ${targetOwner}`)
+		printLog(`no need to transfer back, the punk already belongs to ${targetOwner}`)
 		return
 	}
 	if (realOwner.toLowerCase() !== possibleOwner) {
