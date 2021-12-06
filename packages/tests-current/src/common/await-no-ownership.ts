@@ -1,5 +1,4 @@
-import {RETRY_ATTEMPTS} from "../cryptoPunks/util"
-import {apiSdk} from "../cryptoPunks/common-eth"
+import {apiSdk, RETRY_ATTEMPTS} from "../cryptoPunks/util"
 import {retry} from "./retry"
 import {getOwnershipId} from "./get-ownership-id"
 import {expectEqual} from "./expect-equal"

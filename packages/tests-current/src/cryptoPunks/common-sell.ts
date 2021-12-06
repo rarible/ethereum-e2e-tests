@@ -5,7 +5,7 @@ import {expectEqual, expectEqualStrict} from "../common/expect-equal"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
 import {toBn} from "../common/to-bn"
 import {ASSET_TYPE_CRYPTO_PUNK, punkIndex} from "./crypto-punks"
-import {apiSdk} from "./common-eth"
+import {apiSdk} from "./util"
 
 export function checkSellOrder(
 	order: RaribleV2Order | CryptoPunkOrder,

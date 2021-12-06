@@ -1,5 +1,7 @@
+import {createRaribleSdk} from "@rarible/protocol-ethereum-sdk"
+
 export const RETRY_ATTEMPTS = 8
-export const TEST_TIMEOUT = 30000
+export const TEST_TIMEOUT = 120000
 
 function getMessage(message: any): string {
 	let testName = expect.getState().currentTestName
@@ -30,3 +32,5 @@ export async function runLogging<T extends any>(
 		throw e
 	}
 }
+
+export const apiSdk = createRaribleSdk(undefined, "e2e")

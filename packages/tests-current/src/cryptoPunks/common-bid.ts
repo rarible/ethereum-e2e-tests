@@ -6,9 +6,8 @@ import {retry} from "../common/retry"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
 import {toBn} from "../common/to-bn"
 import {ASSET_TYPE_CRYPTO_PUNK, punkIndex} from "./crypto-punks"
-import {RETRY_ATTEMPTS, runLogging} from "./util"
+import {apiSdk, RETRY_ATTEMPTS, runLogging} from "./util"
 import {getApiRariblePunkBids} from "./rarible-bid"
-import {apiSdk} from "./common-eth"
 
 export function checkBidFields(
 	bid: RaribleV2Order | CryptoPunkOrder,
