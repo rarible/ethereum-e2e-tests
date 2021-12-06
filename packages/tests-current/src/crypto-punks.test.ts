@@ -42,7 +42,7 @@ import {
 	createRaribleSellOrder,
 } from "./cryptoPunks/rarible-sell"
 import {withdrawEth} from "./cryptoPunks/common-eth"
-import {transferPunkBackToInitialOwner} from "./cryptoPunks/common-test"
+import {transferPunkTo} from "./cryptoPunks/common-test"
 import {fillOrder} from "./cryptoPunks/common-fill"
 
 describe("crypto punks test", function () {
@@ -103,7 +103,7 @@ describe("crypto punks test", function () {
 
 	async function cleanupTestEnvironment() {
 		printLog("Started cleaning up test environment")
-		await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
+		await transferPunkTo(wallet1Address, wallet2Address, cryptoPunks2)
 
 		await cancelBidsInPunkMarket(wallet1Address, cryptoPunks1)
 		await cancelBidsInPunkMarket(wallet2Address, cryptoPunks2)

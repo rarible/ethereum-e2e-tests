@@ -8,9 +8,11 @@ import {printLog} from "./util"
 import {punkIndex} from "./crypto-punks"
 
 /**
- * Returns punk to [targetOwner] from [possibleOwner]
+ * Returns punk to {@param targetOwner} from {@param possibleOwner} if necessary (using {@param possibleContract}).
+ * If the punk already belongs to the {@param targetOwner}, the function does nothing.
+ * If the punk belongs to neither of {@param targetOwner} nor {@param possibleOwner}, it throws an exception.
  */
-export async function transferPunkBackToInitialOwner(
+export async function transferPunkTo(
 	targetOwner: string,
 	possibleOwner: string,
 	possibleContract: Contract
@@ -23,7 +25,7 @@ export async function transferPunkBackToInitialOwner(
 	if (realOwner.toLowerCase() !== possibleOwner) {
 		throw Error(`Punk with id ${punkIndex} is owned by the third side user: ${realOwner}`)
 	}
-	printLog("transferring back from wallet2 to wallet1")
+	printLog(`transferring back from ${possibleOwner} to ${targetOwner}`)
 	await verifyCryptoPunkOwner(possibleContract, punkIndex, possibleOwner)
 	await awaitOwnershipValueToBe(cryptoPunksAddress, punkIndex, possibleOwner, 1)
 
