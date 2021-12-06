@@ -1,4 +1,4 @@
-import {EthAssetType, RaribleV2Order} from "@rarible/ethereum-api-client"
+import {RaribleV2Order} from "@rarible/ethereum-api-client"
 import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
@@ -16,7 +16,7 @@ import {checkApiNoRaribleBids, checkBidFields, getBidsForPunkByType} from "./com
  */
 export async function createRaribleBidOrder(
 	maker: string,
-	makeAssetType: EthAssetType | Erc20AssetType,
+	makeAssetType: Erc20AssetType,
 	price: number,
 	sdk: RaribleSdk
 ): Promise<RaribleV2Order> {

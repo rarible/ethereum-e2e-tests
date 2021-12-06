@@ -188,7 +188,7 @@ describe("crypto punks test", function () {
 
 		const raribleBidPrice = 17
 		if (withExistingRaribleBid) {
-			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ETH, raribleBidPrice, sdk2)
+			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, raribleBidPrice, sdk2)
 		}
 
 		const punkBidPrice = 5
@@ -256,7 +256,7 @@ describe("crypto punks test", function () {
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 		const raribleBidPrice = 17
 		if (withExistingRaribleBid) {
-			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ETH, raribleBidPrice, sdk2)
+			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, raribleBidPrice, sdk2)
 		}
 		const punkMarketBidPrice = 5
 		if (withExistingPunkBid) {
