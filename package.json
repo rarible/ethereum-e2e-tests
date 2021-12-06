@@ -17,8 +17,6 @@
     ]
   },
   "devDependencies": {
-    "@ethereumjs/common": "2.4.0",
-    "@ethereumjs/tx": "3.3.0",
     "@rarible/eslint-config-ts": "0.0.5",
     "eslint": "7.32.0",
     "eth-rpc-errors": "4.0.3",

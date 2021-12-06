@@ -6,4 +6,7 @@ module.exports = {
 	transform: {
 		"^.+\\.ts?$": "ts-jest",
 	},
+	moduleNameMapper: {
+		"source-map-support/register": "identity-obj-proxy",
+	},
 }
