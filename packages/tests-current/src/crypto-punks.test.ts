@@ -402,14 +402,14 @@ describe("crypto punks test", function () {
 	}, TEST_TIMEOUT)
 
 	test("test update bid by punk market", async () => {
-		const price = 8
+		const oldPrice = 8
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
-		await createPunkMarketBid(wallet2Address, price, web32, cryptoPunks2)
-		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
+		await createPunkMarketBid(wallet2Address, oldPrice, web32, cryptoPunks2)
+		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(oldPrice).toString())
 
 		const newPrice = 10
 		await createPunkMarketBid(wallet2Address, newPrice, web32, cryptoPunks2)
-		await cryptoPunks2.methods.withdraw().send({from: wallet2Address})
+		await withdrawEth(web32, cryptoPunks2, wallet2Address, oldPrice)
 
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
 		await checkApiPunkMarketBidExists(wallet2Address, newPrice)
