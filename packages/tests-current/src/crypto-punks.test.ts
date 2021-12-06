@@ -105,9 +105,9 @@ describe("crypto punks test", function () {
 		printLog("Started cleaning up test environment")
 		await transferPunkBackToInitialOwner(wallet1Address, wallet2Address, cryptoPunks2)
 
-		await cancelBidsInPunkMarket(wallet1Address, cryptoPunks1, false)
-		await cancelBidsInPunkMarket(wallet2Address, cryptoPunks2, false)
-		await cancelBidsInPunkMarket(wallet3Address, cryptoPunks3, false)
+		await cancelBidsInPunkMarket(wallet1Address, cryptoPunks1)
+		await cancelBidsInPunkMarket(wallet2Address, cryptoPunks2)
+		await cancelBidsInPunkMarket(wallet3Address, cryptoPunks3)
 
 		await cancelSellOrderInPunkMarket(wallet1Address, cryptoPunks1, false)
 		await cancelSellOrderInPunkMarket(wallet2Address, cryptoPunks2, false)

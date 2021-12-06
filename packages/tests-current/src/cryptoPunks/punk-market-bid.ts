@@ -80,7 +80,7 @@ export async function checkApiNoMarketBids(maker: string) {
 /**
  * Cancel native bids, if any. Ensure there are no native bids in the API response.
  */
-export async function cancelBidsInPunkMarket(maker: string, contract: Contract, throwIfAnotherBidder: boolean = true) {
+export async function cancelBidsInPunkMarket(maker: string, contract: Contract) {
 	const bid = await contract.methods.punkBids(punkIndex).call()
 	const bidder = bid.bidder.toString().toLowerCase()
 	if (bidder === ZERO_ADDRESS.toLowerCase()) {
@@ -89,9 +89,6 @@ export async function cancelBidsInPunkMarket(maker: string, contract: Contract, 
 	}
 	if (bidder !== maker) {
 		let message = `Bid is from another bidder ${bidder}`
-		if (throwIfAnotherBidder) {
-			throw new Error(message)
-		}
 		printLog(message)
 		return
 	}
