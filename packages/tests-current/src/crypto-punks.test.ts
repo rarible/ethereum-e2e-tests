@@ -4,6 +4,7 @@ import {Web3Ethereum} from "@rarible/web3-ethereum"
 import {Contract} from "web3-eth-contract"
 import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {e2eConfig} from "@rarible/protocol-ethereum-sdk/build/config/e2e"
+import {RaribleV2Order} from "@rarible/ethereum-api-client"
 import {awaitOwnershipValueToBe} from "./common/await-ownership-value-to-be"
 import {awaitNoOwnership} from "./common/await-no-ownership"
 import {initProvider} from "./common/init-providers"
@@ -13,7 +14,6 @@ import {cryptoPunksAddress, cryptoPunksContract} from "./contracts/crypto-punks"
 import {verifyEthBalance} from "./common/verify-eth-balance"
 import {toBn} from "./common/to-bn"
 import {retry} from "./common/retry"
-import {expectEqual, expectEqualStrict} from "./common/expect-equal"
 import {deployTestErc20, erc20Mint} from "./contracts/test-erc20"
 import {verifyErc20Balance} from "./common/verify-erc20-balance"
 import {ASSET_TYPE_CRYPTO_PUNK, ASSET_TYPE_ETH, punkIndex} from "./cryptoPunks/crypto-punks"
@@ -191,9 +191,9 @@ describe("crypto punks test", function () {
 		const balanceBefore1 = await web31.eth.getBalance(wallet1Address)
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
 
-		const raribleBidPrice = 17
+		let raribleBid: RaribleV2Order
 		if (withExistingRaribleBid) {
-			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, raribleBidPrice, sdk2)
+			raribleBid = await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, 17, sdk2)
 		}
 
 		const punkBidPrice = 5
@@ -211,9 +211,7 @@ describe("crypto punks test", function () {
 		await verifyEthBalance(web31, toAddress(wallet1Address), toBn(balanceBefore1).plus(price).toString())
 		if (withExistingPunkBid) {
 			// Punk bid must be cancelled and ETH returned to the buyer.
-			expectEqualStrict(
-				await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address), punkBidPrice, "expected withdrawn"
-			)
+			expect(await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address)).toStrictEqual(punkBidPrice)
 
 			// Punk market bid must be deleted (because the bidder got the punk via sale).
 			await checkApiNoMarketBids(wallet2Address)
@@ -222,7 +220,7 @@ describe("crypto punks test", function () {
 
 		if (withExistingRaribleBid) {
 			// The Rarible bid must survive.
-			await checkApiRaribleBidExists(wallet2Address, raribleBidPrice)
+			await checkApiRaribleBidExists(raribleBid!!)
 		}
 
 		await verifyCryptoPunkOwner(cryptoPunks2, punkIndex, wallet2Address)
@@ -261,9 +259,9 @@ describe("crypto punks test", function () {
 			throw new Error("check supports case with either rarible or punk bid")
 		}
 		const balanceBefore2 = await web32.eth.getBalance(wallet2Address)
-		const raribleBidPrice = 17
+		let raribleBid: RaribleV2Order
 		if (withExistingRaribleBid) {
-			await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, raribleBidPrice, sdk2)
+			raribleBid = await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, 17, sdk2)
 		}
 		const punkMarketBidPrice = 5
 		if (withExistingPunkBid) {
@@ -276,13 +274,11 @@ describe("crypto punks test", function () {
 		await checkApiNoMarketSellOrders()
 		if (withExistingRaribleBid) {
 			// Rarible bid must survive
-			await checkApiRaribleBidExists(wallet2Address, raribleBidPrice)
+			await checkApiRaribleBidExists(raribleBid!!)
 		}
 		if (withExistingPunkBid) {
 			// Punk market bid must be cancelled (because the bidder got the punk he wanted).
-			expectEqualStrict(
-				await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address), punkMarketBidPrice, "expected withdrawn"
-			)
+			expect(await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address)).toStrictEqual(punkMarketBidPrice)
 			await checkPunkMarketBidNotExists(cryptoPunks2)
 			await checkApiNoMarketBids(wallet2Address)
 		}
@@ -375,7 +371,7 @@ describe("crypto punks test", function () {
 		await checkPunkMarketForSale(cryptoPunks1, wallet1Address, newPrice)
 		await retry(RETRY_ATTEMPTS, async () => {
 			let updatedSellOrder = await checkApiPunkMarketSellOrderExists(wallet1Address)
-			expectEqual(updatedSellOrder.take.value, newPrice.toString(), "updated sell price")
+			expect(updatedSellOrder.take.value).toBe(newPrice.toString())
 		})
 	}, TEST_TIMEOUT)
 
@@ -419,9 +415,7 @@ describe("crypto punks test", function () {
 
 		const newPrice = 10
 		await createPunkMarketBid(wallet2Address, newPrice, web32, cryptoPunks2)
-		expectEqualStrict(
-			await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address), oldPrice, "expected withdrawn"
-		)
+		expect(await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address)).toStrictEqual(oldPrice)
 
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
 		await checkApiPunkMarketBidExists(wallet2Address, newPrice)
@@ -445,9 +439,7 @@ describe("crypto punks test", function () {
 		await checkPunkMarketBidExists(cryptoPunks2, wallet2Address, newPrice)
 		await checkApiPunkMarketBidExists(wallet2Address, newPrice)
 
-		expectEqualStrict(
-			await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address), price, "expected withdrawn"
-		)
+		expect(await punkMarketWithdrawEth(web32, cryptoPunks2, wallet2Address)).toStrictEqual(price)
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(newPrice).toString())
 	}, TEST_TIMEOUT)
 
@@ -476,11 +468,11 @@ describe("crypto punks test", function () {
 		await createPunkMarketBid(wallet2Address, punkMarketPrice, web32, cryptoPunks2)
 
 		const rariblePrice = 10
-		await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, rariblePrice, sdk2)
+		let raribleBid = await createRaribleBidOrder(wallet2Address, ASSET_TYPE_ERC20, rariblePrice, sdk2)
 
 		// Both bids exist because they are in different currencies.
 		await checkApiPunkMarketBidExists(wallet2Address, punkMarketPrice)
-		await checkApiRaribleBidExists(wallet2Address, rariblePrice)
+		await checkApiRaribleBidExists(raribleBid)
 	}, TEST_TIMEOUT)
 
 	test("test buy using rarible bid with erc20", async () => {
@@ -567,9 +559,7 @@ describe("crypto punks test", function () {
 		await checkPunkMarketBidNotExists(cryptoPunks2)
 		await checkApiNoMarketBids(wallet2Address)
 
-		expectEqualStrict(
-			await punkMarketWithdrawEth(web31, cryptoPunks1, wallet1Address), price, "expected withdrawn"
-		)
+		expect(await punkMarketWithdrawEth(web31, cryptoPunks1, wallet1Address)).toStrictEqual(price)
 		await verifyEthBalance(web31, toAddress(wallet1Address), toBn(balanceBefore1).plus(price).toString())
 		await verifyEthBalance(web32, toAddress(wallet2Address), toBn(balanceBefore2).minus(price).toString())
 

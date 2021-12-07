@@ -1,7 +1,6 @@
 import {EthAssetType, Platform, RaribleV2Order} from "@rarible/ethereum-api-client"
 import {CryptoPunkOrder, Order} from "@rarible/ethereum-api-client/build/models/Order"
 import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
-import {expectEqual, expectEqualStrict} from "../common/expect-equal"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
 import {toBn} from "../common/to-bn"
 import {ASSET_TYPE_CRYPTO_PUNK, punkIndex} from "./crypto-punks"
@@ -14,14 +13,14 @@ export function checkSellOrder(
 	maker: string,
 	taker: string | undefined = undefined
 ) {
-	expectEqualStrict(order.make.assetType, ASSET_TYPE_CRYPTO_PUNK, "type of order.make.asset")
-	expectEqual(order.make.value, "1", "order.make.value")
-	expectEqual(order.makeStock, "1", "order.makeStock")
-	expectEqual(order.maker, maker, "order.maker")
+	expect(order.make.assetType).toStrictEqual(ASSET_TYPE_CRYPTO_PUNK)
+	expect(order.make.value).toBe("1")
+	expect(order.makeStock).toBe("1")
+	expect(order.maker).toBe(maker)
 
-	expectEqual(order.taker, taker, "order.taker")
-	expectEqualStrict(toBn(order.take.value), toBn(price), "order take.value")
-	expectEqualStrict(order.take.assetType, takeAssetType, "type of order.take.asset")
+	expect(order.taker).toBe(taker)
+	expect(toBn(order.take.value)).toStrictEqual(toBn(price))
+	expect(order.take.assetType).toStrictEqual(takeAssetType)
 }
 
 export async function getApiSellOrdersForPunkByType<T extends Order>(

@@ -3,13 +3,12 @@ import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
 import {retry} from "../common/retry"
-import {expectEqual, expectLength} from "../common/expect-equal"
 import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
 import {
 	ASSET_TYPE_CRYPTO_PUNK,
 	ORDER_TYPE_RARIBLE_V2,
 } from "./crypto-punks"
-import {checkApiNoRaribleBids, checkBidFields, getBidsForPunkByType} from "./common-bid"
+import {checkBidFields, getBidsForPunkByType} from "./common-bid"
 
 /**
  * Creates RaribleV2 punk bid.
@@ -21,7 +20,7 @@ export async function createRaribleBidOrder(
 	sdk: RaribleSdk
 ): Promise<RaribleV2Order> {
 	let isErc20 = "contract" in makeAssetType
-	let bidOrder = await runLogging(
+	let raribleBid = await runLogging(
 		`create ${isErc20 ? "ERC20" : "ETH"} Rarible bid order with price ${price}`,
 		sdk.order.bid({
 			makeAssetType: makeAssetType,
@@ -33,10 +32,10 @@ export async function createRaribleBidOrder(
 			takeAssetType: ASSET_TYPE_CRYPTO_PUNK,
 		}).then((order) => order as RaribleV2Order)
 	)
-	printLog(`Created RaribleV2 bid order: ${JSON.stringify(bidOrder)}`)
-	await checkApiRaribleBidExists(maker, price)
-	checkBidFields(bidOrder, maker, makeAssetType, price)
-	return bidOrder
+	printLog(`Created RaribleV2 bid order: ${JSON.stringify(raribleBid)}`)
+	checkBidFields(raribleBid, maker, makeAssetType, price)
+	await checkApiRaribleBidExists(raribleBid)
+	return raribleBid
 }
 
 /**
@@ -62,14 +61,12 @@ export async function cancelRaribleBids(
 }
 
 /**
- * Ensure the API returns Rarible punk bid order.
+ * Ensure the API returns the expected bid.
  */
-export async function checkApiRaribleBidExists(maker: string, price: number) {
+export async function checkApiRaribleBidExists(bid: RaribleV2Order) {
 	await retry(RETRY_ATTEMPTS, async () => {
-		const bids = await getApiRariblePunkBids(maker)
-		expectLength(bids, 1, `Rarible bid from ${maker}`)
-		let bid = bids[0]
-		expectEqual(bid.make.value, price.toString(), "API Rarible bid price")
+		const bids = await getApiRariblePunkBids(bid.maker)
+		expect(bids).toContainEqual(bid)
 	})
 }
 

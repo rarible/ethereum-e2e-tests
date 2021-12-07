@@ -1,14 +1,9 @@
 import {Contract} from "web3-eth-contract"
 import {CryptoPunkOrder} from "@rarible/ethereum-api-client/build/models/Order"
-import {expectEqual, expectLength} from "../common/expect-equal"
 import {retry} from "../common/retry"
 import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
 import {checkSellOrder, getApiSellOrdersForPunkByType} from "./common-sell"
-import {
-	ASSET_TYPE_ETH,
-	ORDER_TYPE_CRYPTO_PUNK,
-	punkIndex, ZERO_ADDRESS,
-} from "./crypto-punks"
+import {ASSET_TYPE_ETH, ORDER_TYPE_CRYPTO_PUNK, punkIndex, ZERO_ADDRESS} from "./crypto-punks"
 
 /**
  * Creates sell order from [maker] in the punk market.
@@ -27,7 +22,7 @@ export async function createPunkMarketSellOrder(
 	await checkPunkMarketForSale(contract, maker, price, onlySellTo)
 	let order = await retry(RETRY_ATTEMPTS, async () => {
 		const orders = await getPunkMarketSellOrders(maker)
-		expectLength(orders, 1, "punk market orders count")
+		expect(orders).toHaveLength(1)
 		return orders[0]
 	})
 	printLog(`Created punk market order: ${JSON.stringify(order)}`)
@@ -42,16 +37,16 @@ export async function checkPunkMarketForSale(
 	onlySellTo: string = ZERO_ADDRESS
 ) {
 	const rawSell = await contract.methods.punksOfferedForSale(punkIndex).call()
-	expectEqual(rawSell.isForSale, true, "rawSell.isForSale")
-	expectEqual(rawSell.seller.toLowerCase(), maker, "rawSell.seller")
-	expectEqual(rawSell.minValue, price.toString(), "rawSell.minValue")
-	expectEqual(rawSell.punkIndex, punkIndex.toString(), "rawSell.punkIndex")
-	expectEqual(rawSell.onlySellTo.toLowerCase(), onlySellTo, "rawSell.onlySellTo")
+	expect(rawSell.isForSale).toBe(true)
+	expect(rawSell.seller.toLowerCase()).toBe(maker)
+	expect(rawSell.minValue).toBe(price.toString())
+	expect(rawSell.punkIndex).toBe(punkIndex.toString())
+	expect(rawSell.onlySellTo.toLowerCase()).toBe(onlySellTo)
 }
 
 export async function checkPunkMarketNotForSale(contract: Contract) {
 	const forSale = await contract.methods.punksOfferedForSale(punkIndex).call()
-	expectEqual(forSale.isForSale, false, "punk is still on sale")
+	expect(forSale.isForSale).toBe(false)
 }
 
 /**
@@ -70,9 +65,9 @@ export async function checkApiPunkMarketSellOrderExists(
 ): Promise<CryptoPunkOrder> {
 	return await retry(RETRY_ATTEMPTS, async () => {
 		const sellOrders = await getPunkMarketSellOrders(maker)
-		expectLength(sellOrders, 1, `sell orders from ${maker}`)
+		expect(sellOrders).toHaveLength(1)
 		let sellOrder = sellOrders[0]
-		expectEqual(sellOrder.taker, taker, "sell order taker")
+		expect(sellOrder.taker).toBe(taker)
 		return sellOrder
 	})
 }
@@ -85,7 +80,7 @@ export async function checkApiNoMarketSellOrders() {
 		"ensure no punk market sell orders in API",
 		retry(RETRY_ATTEMPTS, async () => {
 			const orders = await getPunkMarketSellOrders(undefined)
-			expectLength(orders, 0, "punk sell orders count")
+			expect(orders).toHaveLength(0)
 		})
 	)
 }
@@ -115,7 +110,7 @@ export async function cancelSellOrderInPunkMarket(
 		printLog(message)
 		return
 	}
-	expectEqual(forSale.seller.toLowerCase(), maker, "seller")
+	expect(forSale.seller.toLowerCase()).toBe(maker)
 	printLog(`Found sell order in punk market, cancelling it ${JSON.stringify(forSale)}`)
 	await contract.methods.punkNoLongerForSale(punkIndex).send({from: maker})
 }

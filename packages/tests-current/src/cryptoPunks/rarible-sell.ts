@@ -3,7 +3,6 @@ import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
 import {RaribleSdk} from "@rarible/protocol-ethereum-sdk"
 import {toAddress} from "@rarible/types"
 import {retry} from "../common/retry"
-import {expectEqual, expectLength} from "../common/expect-equal"
 import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
 import {ASSET_TYPE_CRYPTO_PUNK, ORDER_TYPE_RARIBLE_V2} from "./crypto-punks"
 import {checkSellOrder, getApiSellOrdersForPunkByType} from "./common-sell"
@@ -54,9 +53,9 @@ export async function checkApiRaribleSellOrderExists(maker: string, price: numbe
 		`Check sell order from ${maker} with price ${price}`,
 		retry(RETRY_ATTEMPTS, async () => {
 			const sellOrders = await getRariblePunkSellOrders(maker)
-			expectLength(sellOrders, 1, `sell orders from ${maker}`)
+			expect(sellOrders).toHaveLength(1)
 			let sellOrder = sellOrders[0]
-			expectEqual(sellOrder.take.value, price.toString(), `sell price: ${JSON.stringify(sellOrder)}`)
+			expect(sellOrder.take.value).toBe(price.toString())
 			return sellOrder
 		})
 	)
@@ -70,7 +69,7 @@ export async function checkApiNoRaribleSellOrders() {
 		"ensure no rarible orders in API",
 		retry(RETRY_ATTEMPTS, async () => {
 			const sellOrders = await getRariblePunkSellOrders(undefined)
-			expectLength(sellOrders, 0, "rarible sell orders count")
+			expect(sellOrders).toHaveLength(0)
 		})
 	)
 }

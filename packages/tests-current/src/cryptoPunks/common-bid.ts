@@ -1,7 +1,6 @@
 import {EthAssetType, Platform, RaribleV2Order} from "@rarible/ethereum-api-client"
 import {CryptoPunkOrder, Order} from "@rarible/ethereum-api-client/build/models/Order"
 import {Erc20AssetType} from "@rarible/ethereum-api-client/build/models"
-import {expectEqual, expectEqualStrict, expectLength} from "../common/expect-equal"
 import {retry} from "../common/retry"
 import {cryptoPunksAddress} from "../contracts/crypto-punks"
 import {toBn} from "../common/to-bn"
@@ -16,13 +15,13 @@ export function checkBidFields(
 	price: number,
 	taker: string | undefined = undefined
 ) {
-	expectEqualStrict(bid.make.assetType, makeAssetType, "type of bid.make.asset")
-	expectEqualStrict(toBn(bid.make.value), toBn(price), "bid make.value")
-	expectEqual(bid.maker, maker, "bid.maker")
+	expect(bid.make.assetType).toStrictEqual(makeAssetType)
+	expect(toBn(bid.make.value)).toStrictEqual(toBn(price))
+	expect(bid.maker).toBe(maker)
 
-	expectEqual(bid.taker, taker, "bid.taker")
-	expectEqualStrict(bid.take.assetType, ASSET_TYPE_CRYPTO_PUNK, "type of bid.take.asset")
-	expectEqual(bid.take.valueDecimal, 1, "bid.take.valueDecimal")
+	expect(bid.taker).toBe(taker)
+	expect(bid.take.assetType).toStrictEqual(ASSET_TYPE_CRYPTO_PUNK)
+	expect(bid.take.valueDecimal).toBe(1)
 }
 
 /**
@@ -33,7 +32,7 @@ export async function checkApiNoRaribleBids() {
 		"ensure no rarible bids in API",
 		retry(RETRY_ATTEMPTS, async () => {
 			const bids = await getApiRariblePunkBids(undefined)
-			expectLength(bids, 0, "unexpected Rarible bids")
+			expect(bids).toHaveLength(0)
 		})
 	)
 }

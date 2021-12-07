@@ -4,15 +4,9 @@ import {CryptoPunkOrder} from "@rarible/ethereum-api-client/build/models/Order"
 import {toAddress} from "@rarible/types"
 import {verifyEthBalance} from "../common/verify-eth-balance"
 import {toBn} from "../common/to-bn"
-import {expectEqual, expectLength} from "../common/expect-equal"
 import {retry} from "../common/retry"
 import {printLog, RETRY_ATTEMPTS, runLogging} from "./util"
-import {
-	ASSET_TYPE_ETH,
-	ORDER_TYPE_CRYPTO_PUNK,
-	punkIndex,
-	ZERO_ADDRESS,
-} from "./crypto-punks"
+import {ASSET_TYPE_ETH, ORDER_TYPE_CRYPTO_PUNK, punkIndex, ZERO_ADDRESS} from "./crypto-punks"
 import {checkBidFields, getBidsForPunkByType} from "./common-bid"
 
 /**
@@ -30,7 +24,7 @@ export async function createPunkMarketBid(
 	await verifyEthBalance(web3, toAddress(maker), toBn(balanceBefore).minus(price).toString())
 	const bid = await retry(RETRY_ATTEMPTS, async () => {
 		const bids = await getApiPunkMarketBids(maker)
-		expectLength(bids, 1, "created punk market bids")
+		expect(bids).toHaveLength(1)
 		return bids[0]
 	})
 	printLog(`Created CRYPTO_PUNK bid: ${JSON.stringify(bid)}`)
@@ -41,18 +35,18 @@ export async function createPunkMarketBid(
 export async function checkPunkMarketBidExists(contract: Contract, maker: string, price: number) {
 	const rawBid = await contract.methods.punkBids(punkIndex).call()
 	printLog(`Raw punk market bid: ${JSON.stringify(rawBid)}`)
-	expectEqual(rawBid.hasBid, true, "rawBid.hasBid")
-	expectEqual(rawBid.bidder.toLowerCase(), maker, "rawBid.bidder")
-	expectEqual(rawBid.value, price.toString(), "rawBid.value")
-	expectEqual(rawBid.punkIndex, punkIndex.toString(), "rawBid.punkIndex")
+	expect(rawBid.hasBid).toBe(true)
+	expect(rawBid.bidder.toLowerCase()).toBe(maker)
+	expect(rawBid.value).toBe(price.toString())
+	expect(rawBid.punkIndex).toBe(punkIndex.toString())
 }
 
 export async function checkApiPunkMarketBidExists(maker: string, price: number): Promise<CryptoPunkOrder> {
 	return await retry(RETRY_ATTEMPTS, async () => {
 		const bids = await getApiPunkMarketBids(maker)
-		expectLength(bids, 1, `bid orders from ${maker}`)
+		expect(bids).toHaveLength(1)
 		let bid = bids[0]
-		expectEqual(bid.make.value, price.toString(), "API punk market bid price")
+		expect(bid.make.value).toBe(price.toString())
 		return bid
 	})
 }
@@ -61,7 +55,7 @@ export async function checkPunkMarketBidNotExists(
 	contract: Contract,
 ) {
 	const rawBid = await contract.methods.punkBids(punkIndex).call()
-	expectEqual(rawBid.hasBid, false, "bid must not exist")
+	expect(rawBid.hasBid).toBe(false)
 }
 
 /**
@@ -72,7 +66,7 @@ export async function checkApiNoMarketBids(maker: string | undefined = undefined
 		`ensure no punk market bids from ${maker} in API`,
 		retry(RETRY_ATTEMPTS, async () => {
 			const bids = await getApiPunkMarketBids(maker)
-			expectLength(bids, 0, "punk bids count")
+			expect(bids).toHaveLength(0)
 		})
 	)
 }
