@@ -1,4 +1,5 @@
 import {createRaribleSdk} from "@rarible/protocol-ethereum-sdk"
+import {EthAssetType} from "@rarible/ethereum-api-client"
 
 export const RETRY_ATTEMPTS = 8
 export const TEST_TIMEOUT = 120000
@@ -32,5 +33,11 @@ export async function runLogging<T extends any>(
 		throw e
 	}
 }
+
+export const ASSET_TYPE_ETH: EthAssetType = {
+	"assetClass": "ETH",
+}
+
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 export const apiSdk = createRaribleSdk(undefined, "e2e")

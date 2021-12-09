@@ -1,5 +1,5 @@
 import {NftOwnership} from "@rarible/ethereum-api-client"
-import {apiSdk, RETRY_ATTEMPTS} from "../cryptoPunks/util"
+import {apiSdk, RETRY_ATTEMPTS} from "./util"
 import {getOwnershipId} from "./get-ownership-id"
 import {retry} from "./retry"
 

@@ -1,4 +1,4 @@
-import {apiSdk, RETRY_ATTEMPTS} from "../cryptoPunks/util"
+import {apiSdk, RETRY_ATTEMPTS} from "./util"
 import {retry} from "./retry"
 import {getOwnershipId} from "./get-ownership-id"
 
