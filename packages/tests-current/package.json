@@ -21,9 +21,9 @@
   },
   "devDependencies": {
     "@rarible/ethereum-sdk-test-common": "~0.12.1",
-    "@rarible/protocol-ethereum-sdk": "~0.12.3",
+    "@rarible/protocol-ethereum-sdk": "~0.12.20",
     "@rarible/test-provider": "~0.5.0",
-    "@rarible/web3-ethereum": "~0.12.1",
+    "@rarible/web3-ethereum": "~0.12.16",
     "@types/jest": "^26.0.24",
     "@types/node-fetch": "2.5.12",
     "@types/web3-provider-engine": "^14.0.1",

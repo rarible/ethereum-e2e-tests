@@ -65,14 +65,14 @@ describe("Create two ERC20 bid for two ERC721 items and fill them", function () 
 		await awaitStockToBe(sdk1.apis.order, order.hash, 1)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
 
-		await sdk2.order.fill({
+		await sdk2.order.acceptBid({
 			order,
 			originFee: 0,
 			amount: 1,
 			infinite: true,
 		})
 
-		await sdk2.order.fill({
+		await sdk2.order.acceptBid({
 			order: order1,
 			originFee: 0,
 			amount: 1,

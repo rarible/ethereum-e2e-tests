@@ -42,7 +42,7 @@ describe("test buy erc721 for eth", function () {
 		}) as RaribleV2Order
 
 		const balanceBefore = await web32.eth.getBalance(wallet2.getAddressString())
-		await sdk2.order.fill({
+		await sdk2.order.buy({
 			order,
 			originFee: 0,
 			amount: 1,

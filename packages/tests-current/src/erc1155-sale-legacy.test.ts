@@ -73,7 +73,7 @@ describe("erc1155-sale", function() {
 		await awaitStockToBe(sdk1.apis.order, order.hash, 50)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerErc20InitBalance.toString())
 
-		await sdk2.order.fill({
+		await sdk2.order.buy({
 			order,
 			originFee: orderForm.data.fee,
 			amount: 10,
@@ -98,7 +98,7 @@ describe("erc1155-sale", function() {
 			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)
 		})
 
-		await sdk2.order.fill({
+		await sdk2.order.buy({
 			order,
 			originFee: 0,
 			amount: 20,
