@@ -46,7 +46,7 @@ describe("erc721 create bid/accept bid", function () {
 		await awaitStockToBe(sdk1.apis.order, order.hash, 10)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), 100)
 
-		await sdk2.order.fill({
+		await sdk2.order.acceptBid({
 			order,
 			originFee: 0,
 			amount: 1,

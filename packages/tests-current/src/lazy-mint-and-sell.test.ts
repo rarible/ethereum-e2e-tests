@@ -47,7 +47,7 @@ describe("mint test", function () {
 		}) as RaribleV2Order
 
 		const balanceBefore = await web32.eth.getBalance(wallet2.getAddressString())
-		await sdk2.order.fill({
+		await sdk2.order.buy({
 			order,
 			originFee: 0,
 			amount: 1,
@@ -87,7 +87,7 @@ describe("mint test", function () {
 		}) as RaribleV2Order
 
 		const balanceBefore = await web32.eth.getBalance(wallet2.getAddressString())
-		await sdk2.order.fill({
+		await sdk2.order.buy({
 			order,
 			originFee: 0,
 			amount: 1,

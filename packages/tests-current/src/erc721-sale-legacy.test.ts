@@ -58,7 +58,7 @@ describe("erc721-sale", function () {
 		await awaitStockToBe(sdk1.apis.order, order.hash, 1)
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), 100)
 
-		await sdk2.order.fill({
+		await sdk2.order.buy({
 			order,
 			originFee: 0,
 			amount: 1,
