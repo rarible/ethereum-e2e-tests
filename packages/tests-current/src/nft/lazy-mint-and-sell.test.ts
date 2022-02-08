@@ -3,12 +3,12 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { createErc1155V2Collection, createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/common/mint"
 import { RaribleV2Order } from "@rarible/ethereum-api-client"
-import { verifyMinted } from "./common/verify-minted"
-import { initProviders } from "./common/init-providers"
-import { parseItemId } from "./common/parse-item-id"
-import { verifyNewOwner } from "./common/verify-new-owner"
-import { verifyEthBalance } from "./common/verify-eth-balance"
-import { toBn } from "./common/to-bn"
+import { verifyMinted } from "../common/verify-minted"
+import { initProviders } from "../common/init-providers"
+import { parseItemId } from "../common/parse-item-id"
+import { verifyNewOwner } from "../common/verify-new-owner"
+import { verifyEthBalance } from "../common/verify-eth-balance"
+import { toBn } from "../common/to-bn"
 
 
 describe("mint test", function () {

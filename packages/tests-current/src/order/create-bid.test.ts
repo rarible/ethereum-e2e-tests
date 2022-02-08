@@ -2,14 +2,14 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { OrderActivityFilterByItemTypes, RaribleV2Order } from "@rarible/ethereum-api-client"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { deployTestErc721, erc721Mint } from "./contracts/test-erc721"
-import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
-import { awaitAll } from "./common/await-all"
-import { awaitStockToBe } from "./common/await-stock-to-be"
-import { verifyErc20Balance } from "./common/verify-erc20-balance"
-import { verifyErc721Owner } from "./common/verify-erc721-owner"
-import { retry } from "./common/retry"
-import { initProviders } from "./common/init-providers"
+import { deployTestErc721, erc721Mint } from "../contracts/test-erc721"
+import { deployTestErc20, erc20Mint } from "../contracts/test-erc20"
+import { awaitAll } from "../common/await-all"
+import { awaitStockToBe } from "../common/await-stock-to-be"
+import { verifyErc20Balance } from "../common/verify-erc20-balance"
+import { verifyErc721Owner } from "../common/verify-erc721-owner"
+import { initProviders } from "../common/init-providers"
+import { verifyOrderActivities } from "../common/order-activities-helper"
 
 describe("erc721 create bid/accept bid", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
@@ -58,19 +58,9 @@ describe("erc721 create bid/accept bid", function () {
 		await verifyErc721Owner(conf.testErc721, 1, wallet1.getAddressString())
 		await awaitStockToBe(sdk1.apis.order, order.hash, 0)
 
-		await retry(10, async () => {
-			const a = await sdk2.apis.orderActivity.getOrderActivities({
-				orderActivityFilter: {
-					"@type": "by_item",
-					contract: toAddress(conf.testErc721.options.address),
-					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH,
-						OrderActivityFilterByItemTypes.LIST,
-						OrderActivityFilterByItemTypes.BID],
-				},
-			})
-			expect(a.items.filter(a => a["@type"] === "bid")).toHaveLength(1)
-			expect(a.items.filter(a => a["@type"] === "match")).toHaveLength(1)
-		})
+		await verifyOrderActivities(sdk1, conf.testErc721, "1", new Map([
+			[OrderActivityFilterByItemTypes.BID, 1],
+			[OrderActivityFilterByItemTypes.MATCH, 1]
+		]))
 	})
 })

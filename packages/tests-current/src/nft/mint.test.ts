@@ -2,8 +2,8 @@ import { toAddress } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { createErc1155V2Collection, createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/common/mint"
-import { verifyMinted } from "./common/verify-minted"
-import { initProvider } from "./common/init-providers"
+import { verifyMinted } from "../common/verify-minted"
+import { initProvider } from "../common/init-providers"
 
 describe("mint test", function () {
 	const { web3, wallet } = initProvider()

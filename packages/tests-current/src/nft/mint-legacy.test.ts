@@ -5,8 +5,8 @@ import {
 	createErc1155V1Collection,
 	createErc721V2Collection,
 } from "@rarible/protocol-ethereum-sdk/build/common/mint"
-import { verifyMinted } from "./common/verify-minted"
-import { initProvider } from "./common/init-providers"
+import { verifyMinted } from "../common/verify-minted"
+import { initProvider } from "../common/init-providers"
 
 describe("mint legacy test", function () {
 	const { web3 } = initProvider()

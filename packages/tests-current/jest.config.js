@@ -6,4 +6,8 @@ module.exports = {
 	transform: {
 		"^.+\\.ts?$": "ts-jest",
 	},
+	reporters: [
+		"default",
+		["<rootDir>/../../node_modules/jest-html-reporters", {}],
+	],
 }

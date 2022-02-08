@@ -2,4 +2,4 @@ global.FormData = require("form-data")
 global.window = {
 	fetch: require("node-fetch"),
 }
-jest.setTimeout(40000)
+jest.setTimeout(60000)

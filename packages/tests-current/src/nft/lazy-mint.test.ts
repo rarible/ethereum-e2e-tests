@@ -2,11 +2,11 @@ import { toAddress } from "@rarible/types"
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { createErc1155V2Collection, createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/common/mint"
-import { deployTestErc721Rarible } from "./contracts/test-erc721-rarible"
-import { awaitAll } from "./common/await-all"
-import { verifyMinted } from "./common/verify-minted"
-import { deployTestErc1155 } from "./contracts/test-erc1155"
-import { initProvider } from "./common/init-providers"
+import { deployTestErc721Rarible } from "../contracts/test-erc721-rarible"
+import { awaitAll } from "../common/await-all"
+import { verifyMinted } from "../common/verify-minted"
+import { deployTestErc1155 } from "../contracts/test-erc1155"
+import { initProvider } from "../common/init-providers"
 
 describe("lazy-mint test", function () {
 	const { web3, wallet } = initProvider()
@@ -33,7 +33,7 @@ describe("lazy-mint test", function () {
 	test("should create lazy mint ERC1155 token", async () => {
 
 		const mintResponse = await sdk.nft.mint({
-			collection: createErc1155V2Collection(toAddress(conf.testErc721.options.address)),
+			collection: createErc1155V2Collection(toAddress(conf.testErc1155.options.address)),
 			uri: "ipfs://testUri",
 			creators: [{ account: toAddress(wallet.getAddressString()), value: 10000 }],
 			royalties: [],

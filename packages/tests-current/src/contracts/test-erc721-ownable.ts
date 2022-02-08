@@ -509,7 +509,7 @@ export async function deployTestErc721Ownable(web3: Web3, name: string = "test",
 		.send({ from: address, gas: 5000000, gasPrice: "0" })
 }
 
-export function erc721Mint(c: Contract, from: string, to: string, tokenId: string | number, uri: string = "") {
+export function erc721MintOwnable(c: Contract, from: string, to: string, tokenId: string | number, uri: string = "") {
 	return c.methods.mint(to, tokenId, uri).send({ from })
 }
 
