@@ -7,6 +7,9 @@ import { initProviders } from "../common/init-providers"
 import { verifyAuctionStatus } from "../common/auction-helper"
 import { deployTestErc20 } from "../contracts/test-erc20"
 import { AuctionStatus } from "@rarible/ethereum-api-client"
+import { verifyErc1155Balance } from "../common/verify-erc1155-balance"
+import { verifyEthBalance } from "../common/verify-eth-balance"
+import { toBn } from "../common/to-bn"
 
 
 describe("finish auction test", function () {
@@ -14,6 +17,7 @@ describe("finish auction test", function () {
 	const ethereumSeller = new Web3Ethereum({ web3: web3Seller , gas: 8000000})
 
 	const sellerSdk = createRaribleSdk(ethereumSeller, "e2e")
+	const buyerSdk = createRaribleSdk(new Web3Ethereum({ web3: web3Buyer }), "e2e")
 
 	const conf = awaitAll({
 		sellerContractErc20: deployTestErc20(web3Seller),
@@ -38,7 +42,7 @@ describe("finish auction test", function () {
 				},
 				minimalStepDecimal: toBigNumber("0.00000000000000001"),
 				minimalPriceDecimal: toBigNumber("0.00000000000000005"),
-				duration: 1000,
+				duration: 1,
 				startTime: 0,
 				buyOutPriceDecimal: toBigNumber("0.0000000000000002"),
 				originFees: [],
@@ -48,12 +52,30 @@ describe("finish auction test", function () {
 		await auction.tx.wait()
 		await verifyAuctionStatus(sellerSdk, auction, AuctionStatus.ACTIVE)
 
+		const buyerEthBalanceBefore = await web3Buyer.eth.getBalance(walletBuyer.getAddressString())
+		const sellerEthBalanceBefore = await web3Seller.eth.getBalance(walletSeller.getAddressString())
+
+		const putBid = await buyerSdk.auction.putBid({
+			auctionId: await auction.auctionId,
+			priceDecimal: toBigNumber("0.00000000000000005"),
+			payouts: [],
+			originFees: [],
+		})
+		await putBid.wait()
+
+		await delay(2000)
 		const auctionId = await auction.auctionId
-		//toDo return Error: Transaction has been reverted by the EVM:
 		const finishAuction = await sellerSdk.auction.finish(
 			auctionId
 		)
 		await finishAuction.wait()
+		await verifyErc1155Balance(conf.sellerContractErc1155, walletBuyer.getAddressString(), "4", "1")
+		await verifyEthBalance(web3Seller, toAddress(walletSeller.getAddressString()), toBn(sellerEthBalanceBefore).plus(50).toString())
+		await verifyEthBalance(web3Buyer, toAddress(walletBuyer.getAddressString()), toBn(buyerEthBalanceBefore).minus(50).toString())
 		await verifyAuctionStatus(sellerSdk, auction, AuctionStatus.FINISHED)
 	})
 })
+
+function delay(ms: number) {
+	return new Promise( resolve => setTimeout(resolve, ms) );
+}
