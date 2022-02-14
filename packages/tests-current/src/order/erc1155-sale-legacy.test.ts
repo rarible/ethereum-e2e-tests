@@ -2,14 +2,14 @@ import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { randomWord, toAddress, toBigNumber, toBinary } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { LegacyOrder, OrderActivityFilterByItemTypes, OrderForm } from "@rarible/ethereum-api-client"
-import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
-import { awaitAll } from "./common/await-all"
-import { awaitStockToBe } from "./common/await-stock-to-be"
-import { verifyErc20Balance } from "./common/verify-erc20-balance"
-import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
-import { retry } from "./common/retry"
-import { initProviders } from "./common/init-providers"
-import { toBn } from "./common/to-bn"
+import { deployTestErc20, erc20Mint } from "../contracts/test-erc20"
+import { awaitAll } from "../common/await-all"
+import { awaitStockToBe } from "../common/await-stock-to-be"
+import { verifyErc20Balance } from "../common/verify-erc20-balance"
+import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "../contracts/test-erc1155"
+import { initProviders } from "../common/init-providers"
+import { toBn } from "../common/to-bn"
+import { verifyOrderActivities } from "../common/order-activities-helper"
 
 describe("erc1155-sale", function() {
 	const { web31, web32, wallet1, wallet2 } = initProviders({})
@@ -83,20 +83,10 @@ describe("erc1155-sale", function() {
 		await awaitStockToBe(sdk1.apis.order, order.hash, 40)
 		await verifyErc20Balance(conf.testErc20, wallet1.getAddressString(), sellerErc20InitBalance.plus(100).toString())
 
-		await retry(3, async () => {
-			const activity = await sdk2.apis.orderActivity.getOrderActivities({
-				orderActivityFilter: {
-					"@type": "by_item",
-					contract: toAddress(conf.testErc1155.options.address),
-					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH,
-						OrderActivityFilterByItemTypes.LIST,
-						OrderActivityFilterByItemTypes.BID],
-				},
-			})
-			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(1)
-			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)
-		})
+		await verifyOrderActivities(sdk1, conf.testErc1155, "1", new Map([
+			[OrderActivityFilterByItemTypes.MATCH, 1],
+			[OrderActivityFilterByItemTypes.LIST, 1]
+		]))
 
 		await sdk2.order.buy({
 			order,
@@ -108,20 +98,9 @@ describe("erc1155-sale", function() {
 		await verifyErc20Balance(conf.testErc20, wallet2.getAddressString(), buyerErc20InitBalance.minus(300).toString())
 		await awaitStockToBe(sdk1.apis.order, order.hash, 20)
 
-		await retry(3, async () => {
-			const activity = await sdk2.apis.orderActivity.getOrderActivities({
-				orderActivityFilter: {
-					"@type": "by_item",
-					contract: toAddress(conf.testErc1155.options.address),
-					tokenId: toBigNumber("1"),
-					types: [OrderActivityFilterByItemTypes.MATCH,
-						OrderActivityFilterByItemTypes.LIST,
-						OrderActivityFilterByItemTypes.BID],
-				},
-			})
-			expect(activity.items.filter(a => a["@type"] === "match")).toHaveLength(2)
-			expect(activity.items.filter(a => a["@type"] === "list")).toHaveLength(1)
-		})
-
+		await verifyOrderActivities(sdk1, conf.testErc1155, "1", new Map([
+			[OrderActivityFilterByItemTypes.MATCH, 2],
+			[OrderActivityFilterByItemTypes.LIST, 1]
+		]))
 	})
 })

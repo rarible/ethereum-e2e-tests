@@ -53,7 +53,7 @@ describe("Private collection", function () {
 		await verifyMinted(sdk, mintResponse.itemId)
 	})
 
-	test("should not mint by anyone else", async () => {
+	test.skip("should not mint by anyone else", async () => {
 		await expect(async () => {
 			return sdk.nft.mint({
 				collection: createErc721V3Collection(address),

@@ -3,11 +3,11 @@ import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
 import { createErc721V3Collection } from "@rarible/protocol-ethereum-sdk/build/common/mint"
 import { RaribleV2Order } from "@rarible/ethereum-api-client"
-import { verifyNewOwner } from "./common/verify-new-owner"
-import { verifyEthBalance } from "./common/verify-eth-balance"
-import { toBn } from "./common/to-bn"
-import { initProviders } from "./common/init-providers"
-import { parseItemId } from "./common/parse-item-id"
+import { verifyNewOwner } from "../common/verify-new-owner"
+import { verifyEthBalance } from "../common/verify-eth-balance"
+import { toBn } from "../common/to-bn"
+import { initProviders } from "../common/init-providers"
+import { parseItemId } from "../common/parse-item-id"
 
 describe("test buy erc721 for eth", function () {
 	const { web31, web32, wallet1, wallet2 } = initProviders({ pk2: "ded057615d97f0f1c751ea2795bc4b03bbf44844c13ab4f5e6fd976506c276b9" })

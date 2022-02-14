@@ -9,12 +9,10 @@ import {deployTestErc721Ownable} from "./contracts/test-erc721-ownable"
 import {deployTestErc1155} from "./contracts/test-erc1155-rarible"
 import {initProviders} from "./common/init-providers"
 import {retry} from "./common/retry"
-import {erc721Mint} from "./contracts/test-erc721"
+import {erc721MintOwnable} from "./contracts/test-erc721-ownable"
 
 describe("transfer token ownership", function () {
-	const {
-		web31, wallet1,
-	} = initProviders({})
+	const { web31, wallet1 } = initProviders({})
 
 	const conf = awaitAll({
 		testErc721Ownable: deployTestErc721Ownable(web31),
@@ -58,7 +56,7 @@ describe("transfer token ownership", function () {
 	}, 30000)
 
 	test("transfer ownership of ERC721 Ownable", async () => {
-		await erc721Mint(conf.testErc721Ownable, wallet1.getAddressString(), wallet1.getAddressString(), 1)
+		await erc721MintOwnable(conf.testErc721Ownable, wallet1.getAddressString(), wallet1.getAddressString(), 1)
 		let collection = conf.testErc721Ownable.options.address
 		console.log("Collection", collection)
 		let owner = await conf.testErc721Ownable.methods.owner().call()

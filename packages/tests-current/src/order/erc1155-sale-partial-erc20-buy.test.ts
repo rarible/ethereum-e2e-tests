@@ -1,12 +1,12 @@
 import { createRaribleSdk } from "@rarible/protocol-ethereum-sdk"
 import { toAddress, toBigNumber } from "@rarible/types"
 import { Web3Ethereum } from "@rarible/web3-ethereum"
-import { awaitAll } from "./common/await-all"
-import { awaitStockToBe } from "./common/await-stock-to-be"
-import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "./contracts/test-erc1155"
-import { initProviders } from "./common/init-providers"
-import { verifyErc1155Balance } from "./common/verify-erc1155-balance"
-import { deployTestErc20, erc20Mint } from "./contracts/test-erc20"
+import { awaitAll } from "../common/await-all"
+import { awaitStockToBe } from "../common/await-stock-to-be"
+import { createErc1155EthereumContract, deployTestErc1155, erc1155Mint } from "../contracts/test-erc1155"
+import { initProviders } from "../common/init-providers"
+import { verifyErc1155Balance } from "../common/verify-erc1155-balance"
+import { deployTestErc20, erc20Mint } from "../contracts/test-erc20"
 
 describe("erc1155-sale", function() {
 	const { web31, wallet1, wallet2 } = initProviders({})
