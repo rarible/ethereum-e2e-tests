@@ -1,27 +1,7 @@
-pipeline {
-  agent none
-  options {
-    disableConcurrentBuilds()
-  }
-  stages {
-    stage('test') {
-      environment {
-	      NPM_TOKEN = "na"
-      }
-      agent any
-      steps {
-        sh 'yarn'
-        sh 'yarn bootstrap'
-        sh 'yarn clean'
-        sh 'yarn test'
-      }
-    }
-  }
-  post {
-    always {
-      node("") {
-        cleanWs()
-      }
-    }
-  }
-}
+@Library('shared-library') _
+
+def pipelineConfig = [
+  "JSpublicLibrary": "true"
+]
+
+pipelineE2Etests(pipelineConfig)

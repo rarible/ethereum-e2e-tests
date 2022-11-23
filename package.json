@@ -9,6 +9,7 @@
     "bootstrap": "lerna bootstrap && lerna link",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ./",
     "test": "yarn workspaces run test",
+    "e2e": "sh ./scripts/e2e.sh",
     "verify": "yarn workspaces run verify"
   },
   "lint-staged": {
